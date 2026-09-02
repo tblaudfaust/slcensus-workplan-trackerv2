@@ -1,0 +1,7 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p>You have been assigned as the responsible owner for the following Census workplan activity:</p>
+{% include "emails/_activity_card.html" %}
+<p>Please review the dates and deliverable, and keep its status updated as work progresses.</p>
+{% endblock %}

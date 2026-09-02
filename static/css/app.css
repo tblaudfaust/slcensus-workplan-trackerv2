@@ -1,0 +1,108 @@
+:root {
+  --ct-navy: #0b2e4f;
+  --ct-navy-dark: #081f38;
+  --ct-accent: #1c7ed6;
+  --ct-green: #2f9e44;
+  --ct-amber: #f08c00;
+  --ct-red: #e03131;
+  --ct-gray: #868e96;
+  --ct-bg: #f4f6f9;
+}
+
+body {
+  background-color: var(--ct-bg);
+}
+
+.navbar-census {
+  background-color: var(--ct-navy);
+}
+
+.navbar-census .navbar-brand,
+.navbar-census .nav-link {
+  color: #eef3f8;
+}
+
+.navbar-census .nav-link:hover,
+.navbar-census .nav-link.active {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.kpi-card {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+  height: 100%;
+}
+
+.kpi-card .kpi-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.kpi-card .kpi-label {
+  color: var(--ct-gray);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3em 0.65em;
+  border-radius: 999px;
+}
+
+.status-NOT_STARTED { background-color: #e9ecef; color: #495057; }
+.status-ONGOING { background-color: #d0ebff; color: #1864ab; }
+.status-COMPLETED { background-color: #d3f9d8; color: #2b8a3e; }
+.status-DELAYED { background-color: #ffe3e3; color: #c92a2a; }
+.status-AT_RISK { background-color: #fff3bf; color: #e67700; }
+.status-OVERDUE { background-color: #e03131; color: #ffffff; }
+
+.progress-thin {
+  height: 0.5rem;
+}
+
+.section-card {
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+  padding: 1.25rem;
+}
+
+.readiness-gauge {
+  font-size: 2.5rem;
+  font-weight: 800;
+}
+
+.table-hover-row:hover {
+  background-color: #f1f5f9;
+}
+
+.gantt-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 520px;
+}
+
+/* Bare Django-rendered widgets (e.g. AdminPasswordChangeForm) that don't
+   carry Bootstrap classes still get reasonable field styling. */
+main input[type="text"]:not(.form-control),
+main input[type="password"]:not(.form-control),
+main input[type="email"]:not(.form-control),
+main select:not(.form-select) {
+  display: block;
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+}
+
+.history-entry {
+  border-left: 3px solid var(--ct-accent);
+  padding-left: 0.75rem;
+  margin-bottom: 0.75rem;
+}

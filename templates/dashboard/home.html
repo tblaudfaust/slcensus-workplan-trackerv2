@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% load activity_extras %}
+{% block title %}Dashboard — {{ block.super }}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
+<style>
+  .gantt .bar-wrapper.gantt-completed .bar { fill: #2f9e44; }
+  .gantt .bar-wrapper.gantt-ongoing .bar { fill: #1c7ed6; }
+  .gantt .bar-wrapper.gantt-not_started .bar { fill: #adb5bd; }
+  .gantt .bar-wrapper.gantt-delayed .bar { fill: #e03131; }
+  .gantt .bar-wrapper.gantt-at_risk .bar { fill: #f08c00; }
+  .gantt .bar-wrapper.gantt-overdue .bar { fill: #c92a2a; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0"><i class="bi bi-speedometer2"></i> Census Readiness Dashboard</h4>
+    <p class="text-muted small mb-0">{{ project.name }}</p>
+  </div>
+  <div class="text-end">
+    <div class="text-muted small">Overall Readiness</div>
+    <div class="readiness-gauge" style="color: {% if kpis.readiness >= 75 %}var(--ct-green){% elif kpis.readiness >= 40 %}var(--ct-amber){% else %}var(--ct-red){% endif %};">
+      {{ kpis.readiness }}%
+    </div>
+  </div>
+</div>
+
+<form method="get" class="section-card mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Workstream</label>
+      {{ form.workstream }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Responsible</label>
+      {{ form.responsible }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Status</label>
+      {{ form.status }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">Phase</label>
+      {{ form.phase }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">End from</label>
+      {{ form.end_from }}
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small mb-1">End to</label>
+      {{ form.end_to }}
+    </div>
+  </div>
+  <div class="mt-2 d-flex gap-2">
+    <button type="submit" class="btn btn-sm btn-primary">Apply filters</button>
+    <a href="{% url 'dashboard:home' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+    <a href="{% url 'activities:list' %}" class="btn btn-sm btn-outline-secondary ms-auto">View all activities <i class="bi bi-arrow-right"></i></a>
+  </div>
+</form>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3 col-lg-2">
+    <div class="kpi-card p-3">
+      <div class="kpi-value">{{ kpis.total }}</div>
+      <div class="kpi-label">Total Activities</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-lg-2">
+    <div class="kpi-card p-3">
+      <div class="kpi-value text-success">{{ kpis.status_counts.COMPLETED }}</div>
+      <div class="kpi-label">Completed</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-lg-2">
+    <div class="kpi-card p-3">
+      <div class="kpi-value text-primary">{{ kpis.status_counts.ONGOING }}</div>
+      <div class="kpi-label">Ongoing</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-lg-2">
+    <div class="kpi-card p-3">
+      <div class="kpi-value" style="color:var(--ct-amber);">{{ kpis.status_counts.AT_RISK }}</div>
+      <div class="kpi-label">At Risk</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-lg-2">
+    <div class="kpi-card p-3">
+      <div class="kpi-value text-danger">{{ kpis.overdue }}</div>
+      <div class="kpi-label">Overdue</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-lg-2">
+    <div class="kpi-card p-3">
+      <div class="kpi-value text-secondary">{{ kpis.unassigned }}</div>
+      <div class="kpi-label">No Owner</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3">
+    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_today }}</div><div class="kpi-label">Due Today</div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_this_week }}</div><div class="kpi-label">Due This Week</div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_14 }}</div><div class="kpi-label">Due in 14 Days</div></div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_30 }}</div><div class="kpi-label">Due in 30 Days</div></div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="section-card h-100">
+      <h6 class="mb-3">Status Breakdown</h6>
+      <div style="position:relative; height:260px;">
+        <canvas id="statusChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="section-card h-100">
+      <h6 class="mb-3">Workstream Performance (% Complete)</h6>
+      <div style="position:relative; height:260px;">
+        <canvas id="workstreamChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-card mb-3">
+  <h6 class="mb-3">Workstream Performance</h6>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Workstream</th><th>Total</th><th>Completed</th><th>Overdue</th><th>% Complete</th></tr></thead>
+      <tbody>
+        {% for row in workstream_rows %}
+        <tr class="table-hover-row">
+          <td><a href="{% url 'projects:workstream_detail' row.workstream.pk %}">{{ row.workstream.name }}</a></td>
+          <td>{{ row.total }}</td>
+          <td>{{ row.completed }}</td>
+          <td>{% if row.overdue %}<span class="text-danger fw-semibold">{{ row.overdue }}</span>{% else %}0{% endif %}</td>
+          <td style="min-width:160px;">
+            <div class="progress progress-thin"><div class="progress-bar bg-success" style="width:{{ row.percent }}%"></div></div>
+            <span class="small text-muted">{{ row.percent }}%</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="section-card mb-3">
+  <h6 class="mb-3"><i class="bi bi-bar-chart-steps"></i> Project Timeline</h6>
+  <div class="gantt-wrapper">
+    <svg id="ganttChart"></svg>
+  </div>
+  <div id="ganttEmpty" class="text-muted small text-center py-4" style="display:none;">No activities with both a start and end date to plot yet.</div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="section-card h-100">
+      <h6 class="mb-3 text-danger"><i class="bi bi-exclamation-triangle"></i> Overdue</h6>
+      {% for a in overdue_list %}
+      <div class="mb-2 pb-2 border-bottom small">
+        <a href="{% url 'activities:detail' a.pk %}">{{ a.name }}</a>
+        <div class="text-muted">{{ a.workstream.name }} &middot; was due {{ a.end_date|date:"d M Y" }}</div>
+      </div>
+      {% empty %}<p class="text-muted small">Nothing overdue. Well done.</p>{% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="section-card h-100">
+      <h6 class="mb-3"><i class="bi bi-calendar-event"></i> Upcoming Deadlines</h6>
+      {% for a in upcoming %}
+      <div class="mb-2 pb-2 border-bottom small">
+        <a href="{% url 'activities:detail' a.pk %}">{{ a.name }}</a>
+        <div class="text-muted">{{ a.workstream.name }} &middot; due {{ a.end_date|date:"d M Y" }}</div>
+      </div>
+      {% empty %}<p class="text-muted small">No upcoming deadlines in range.</p>{% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="section-card h-100">
+      <h6 class="mb-3 text-secondary"><i class="bi bi-person-x"></i> Missing Owners</h6>
+      {% for a in unassigned_list %}
+      <div class="mb-2 pb-2 border-bottom small">
+        <a href="{% url 'activities:detail' a.pk %}">{{ a.name }}</a>
+        <div class="text-muted">{{ a.workstream.name }}</div>
+      </div>
+      {% empty %}<p class="text-muted small">Every activity has an owner.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+<script>
+const chartDataUrl = "{% url 'dashboard:chart_data' %}?{{ request.GET.urlencode }}";
+const ganttDataUrl = "{% url 'dashboard:gantt_data' %}?{{ request.GET.urlencode }}";
+
+fetch(chartDataUrl).then(r => r.json()).then(data => {
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: data.status_labels,
+      datasets: [{
+        data: data.status_values,
+        backgroundColor: ['#adb5bd', '#1c7ed6', '#2f9e44', '#e03131', '#f08c00'],
+      }],
+    },
+    options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+  });
+
+  new Chart(document.getElementById('workstreamChart'), {
+    type: 'bar',
+    data: {
+      labels: data.workstream_labels,
+      datasets: [{ label: '% Complete', data: data.workstream_values, backgroundColor: '#1c7ed6' }],
+    },
+    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } }, plugins: { legend: { display: false } } },
+  });
+});
+
+fetch(ganttDataUrl).then(r => r.json()).then(tasks => {
+  if (!tasks.length) {
+    document.getElementById('ganttEmpty').style.display = 'block';
+    return;
+  }
+  const gantt = new Gantt("#ganttChart", tasks, {
+    view_mode: 'Week',
+    on_click: (task) => { window.location.href = task.url; },
+  });
+});
+</script>
+{% endblock %}

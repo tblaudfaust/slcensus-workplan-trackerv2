@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Upload History — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-clock-history"></i> Upload History</h4>
+  <a href="{% url 'uploads:start' %}" class="btn btn-primary btn-sm"><i class="bi bi-cloud-upload"></i> New upload</a>
+</div>
+<div class="section-card p-0">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr><th>File</th><th>Project</th><th>Workstream</th><th>Uploaded by</th><th>When</th><th>Created</th><th>Updated</th><th>Skipped</th></tr>
+      </thead>
+      <tbody>
+        {% for b in batches %}
+        <tr class="table-hover-row">
+          <td><a href="{% url 'uploads:batch_detail' b.pk %}">{{ b.file_name }}</a></td>
+          <td>{{ b.project.name }}</td>
+          <td>{{ b.workstream.name|default:"Full workbook" }}</td>
+          <td>{{ b.uploaded_by|default:"—" }}</td>
+          <td>{{ b.uploaded_at|date:"d M Y H:i" }}</td>
+          <td>{{ b.rows_created }}</td>
+          <td>{{ b.rows_updated }}</td>
+          <td>{{ b.rows_skipped }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-center text-muted py-4">No uploads yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p style="color:#e67700;font-weight:bold;">An activity has been marked AT RISK and needs attention:</p>
+{% include "emails/_activity_card.html" %}
+{% endblock %}

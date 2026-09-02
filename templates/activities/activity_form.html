@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if is_create %}New activity{% else %}Edit activity{% endif %} — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="section-card">
+      <h4 class="mb-3">{% if is_create %}New Activity{% else %}Edit {{ activity.name }}{% endif %}</h4>
+      <form method="post">
+        {% csrf_token %}
+        <div class="row">
+        {% for field in form %}
+        <div class="col-md-6 mb-3 {% if field.field.widget.input_type == 'checkbox' %}form-check{% endif %}">
+          {% if field.field.widget.input_type == 'checkbox' %}
+            {{ field }}
+            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% else %}
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+          {% endif %}
+          {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+          {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        </div>
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <a href="{% if activity %}{% url 'activities:detail' activity.pk %}{% else %}{% url 'activities:list' %}{% endif %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

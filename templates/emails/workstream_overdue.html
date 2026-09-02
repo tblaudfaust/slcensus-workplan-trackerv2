@@ -1,0 +1,11 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p style="color:#c92a2a;font-weight:bold;">The {{ workstream.name }} workstream now has {{ overdue_count }} overdue activities (threshold: {{ threshold }}):</p>
+<ul>
+  {% for a in overdue_activities %}
+  <li><a href="{{ site_url }}{% url 'activities:detail' a.pk %}">{{ a.name }}</a> — was due {{ a.end_date|date:"d M Y" }}</li>
+  {% endfor %}
+</ul>
+<p>Please review this workstream's schedule as soon as possible.</p>
+{% endblock %}

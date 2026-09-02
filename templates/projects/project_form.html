@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{% if is_create %}New project{% else %}Edit project{% endif %} — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="section-card">
+      <h4 class="mb-3">{% if is_create %}New Census Project{% else %}Edit {{ project.name }}{% endif %}</h4>
+      <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3 {% if field.field.widget.input_type == 'checkbox' %}form-check{% endif %}">
+          {% if field.field.widget.input_type == 'checkbox' %}
+            {{ field }}
+            <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {% else %}
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+          {% endif %}
+          {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <a href="{% url 'projects:list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

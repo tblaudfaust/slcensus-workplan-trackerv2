@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Notification Settings — {{ block.super }}{% endblock %}
+{% block content %}
+<h4 class="mb-3"><i class="bi bi-bell"></i> Notification Settings</h4>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="section-card mb-3">
+    <div class="table-responsive">
+      <table class="table align-middle mb-0">
+        <thead><tr><th>Rule</th><th>Days before (reminders)</th><th>Overdue threshold (workstream alert)</th><th>Enabled</th></tr></thead>
+        <tbody>
+          {% for rule in rules %}
+          <tr>
+            <td>{{ rule.get_rule_type_display }}</td>
+            <td style="max-width:140px;">
+              {% if rule.rule_type == "DEADLINE_REMINDER" %}
+              <input type="number" min="0" class="form-control form-control-sm" name="days__{{ rule.pk }}" value="{{ rule.days_before }}">
+              {% else %}—{% endif %}
+            </td>
+            <td style="max-width:140px;">
+              {% if rule.rule_type == "WORKSTREAM_OVERDUE" %}
+              <input type="number" min="1" class="form-control form-control-sm" name="threshold__{{ rule.pk }}" value="{{ rule.threshold }}">
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <input type="checkbox" class="form-check-input" name="enabled__{{ rule.pk }}" {% if rule.enabled %}checked{% endif %}>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <button type="submit" class="btn btn-primary">Save settings</button>
+</form>
+
+<div class="section-card mt-4">
+  <h6 class="mb-3">Recent Notification Activity</h6>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>When</th><th>Type</th><th>Recipient</th><th>Subject</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for log in recent_log %}
+        <tr>
+          <td>{{ log.sent_at|date:"d M Y H:i" }}</td>
+          <td>{{ log.get_rule_type_display }}</td>
+          <td>{{ log.recipient_email }}</td>
+          <td>{{ log.subject }}</td>
+          <td>{% if log.status == "SENT" %}<span class="badge text-bg-success">Sent</span>{% else %}<span class="badge text-bg-danger">Failed</span>{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-3">No notifications sent yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

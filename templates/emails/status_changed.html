@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p>The status of an activity you're associated with has changed from <strong>{{ old_status }}</strong> to <strong>{{ new_status }}</strong>:</p>
+{% include "emails/_activity_card.html" %}
+{% endblock %}

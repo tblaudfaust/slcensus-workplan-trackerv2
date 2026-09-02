@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Upload Detail — {{ block.super }}{% endblock %}
+{% block content %}
+<h4 class="mb-3"><i class="bi bi-file-earmark-spreadsheet"></i> {{ batch.file_name }}</h4>
+<div class="row g-3 mb-3">
+  <div class="col-md-3"><div class="kpi-card p-3"><div class="kpi-value">{{ batch.rows_total }}</div><div class="kpi-label">Rows processed</div></div></div>
+  <div class="col-md-3"><div class="kpi-card p-3"><div class="kpi-value text-success">{{ batch.rows_created }}</div><div class="kpi-label">Created</div></div></div>
+  <div class="col-md-3"><div class="kpi-card p-3"><div class="kpi-value text-primary">{{ batch.rows_updated }}</div><div class="kpi-label">Updated</div></div></div>
+  <div class="col-md-3"><div class="kpi-card p-3"><div class="kpi-value text-danger">{{ batch.rows_skipped }}</div><div class="kpi-label">Skipped</div></div></div>
+</div>
+<div class="section-card mb-3">
+  <dl class="row mb-0 small">
+    <dt class="col-sm-3">Project</dt><dd class="col-sm-9">{{ batch.project.name }}</dd>
+    <dt class="col-sm-3">Workstream</dt><dd class="col-sm-9">{{ batch.workstream.name|default:"Full workbook (per-sheet)" }}</dd>
+    <dt class="col-sm-3">Worksheets</dt><dd class="col-sm-9">{{ batch.sheet_names|join:", " }}</dd>
+    <dt class="col-sm-3">Uploaded by</dt><dd class="col-sm-9">{{ batch.uploaded_by|default:"—" }}</dd>
+    <dt class="col-sm-3">Uploaded at</dt><dd class="col-sm-9">{{ batch.uploaded_at|date:"d M Y H:i" }}</dd>
+  </dl>
+</div>
+{% if batch.errors %}
+<div class="section-card">
+  <h6 class="mb-2">Skipped rows</h6>
+  <ul class="small mb-0">
+    {% for e in batch.errors %}
+    <li>{{ e.sheet }} — row {{ e.row }}: {{ e.errors|join:"; " }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

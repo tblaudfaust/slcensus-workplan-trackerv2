@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load activity_extras %}
+{% block title %}{{ workstream.name }} — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <p class="text-muted mb-0 small"><a href="{% url 'projects:detail' workstream.project.pk %}">{{ workstream.project.name }}</a></p>
+    <h4 class="mb-0">{{ workstream.name }}</h4>
+    <p class="text-muted mb-0">Lead: {{ workstream.lead|default:"Unassigned" }}</p>
+  </div>
+  <a href="{% url 'projects:workstream_edit' workstream.pk %}" class="btn btn-outline-secondary btn-sm">Edit workstream</a>
+</div>
+
+<div class="section-card">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Activity</th>
+          <th>Owner</th>
+          <th>End date</th>
+          <th>Status</th>
+          <th>Progress</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in activities %}
+        <tr class="table-hover-row">
+          <td><a href="{% url 'activities:detail' a.pk %}">{{ a.name }}</a></td>
+          <td>{{ a.responsible_display }}</td>
+          <td>{{ a.end_date|date:"d M Y"|default:"—" }}</td>
+          <td>{% status_badge a %}</td>
+          <td style="min-width:120px;">
+            <div class="progress progress-thin"><div class="progress-bar" style="width:{{ a.progress_percent }}%"></div></div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No activities in this workstream yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

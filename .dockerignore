@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.git/
+.github/
+db.sqlite3
+media/
+staticfiles/
+.env
+.env.*
+!.env.example
+sample_data/*.xlsx
+.claude/

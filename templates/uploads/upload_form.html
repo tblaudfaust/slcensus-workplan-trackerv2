@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Upload Workplan — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-cloud-upload"></i> Upload Census Workplan</h4>
+  <a href="{% url 'uploads:history' %}" class="btn btn-outline-secondary btn-sm">Upload history</a>
+</div>
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="section-card">
+      <p class="text-muted small">
+        Upload the full Census workplan workbook (each worksheet is matched to, or creates, a workstream)
+        or a single worksheet/CSV for one workstream. You'll review and confirm the detected columns
+        before anything is saved.
+      </p>
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Project</label>
+          {{ form.project }}
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Workstream (optional)</label>
+          {{ form.workstream }}
+          <div class="form-text">{{ form.workstream.help_text }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">File</label>
+          {{ form.file }}
+          <div class="form-text">{{ form.file.help_text }}</div>
+          {% for error in form.file.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+        </div>
+        <button type="submit" class="btn btn-primary">Continue to preview <i class="bi bi-arrow-right"></i></button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

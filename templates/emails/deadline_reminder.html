@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p>This is a reminder that the following activity is due in <strong>{{ days_before }} day{{ days_before|pluralize }}</strong>:</p>
+{% include "emails/_activity_card.html" %}
+{% endblock %}

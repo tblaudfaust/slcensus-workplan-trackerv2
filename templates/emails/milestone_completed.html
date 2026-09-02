@@ -1,0 +1,7 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p style="color:#2b8a3e;font-weight:bold;">A major milestone has been completed:</p>
+{% include "emails/_activity_card.html" %}
+<p>Congratulations to the {{ activity.workstream.name }} team.</p>
+{% endblock %}

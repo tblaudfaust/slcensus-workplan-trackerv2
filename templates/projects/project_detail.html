@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load activity_extras %}
+{% block title %}{{ project.name }} — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h4 class="mb-0">{{ project.name }}</h4>
+    <p class="text-muted mb-0">{{ project.description }}</p>
+  </div>
+  {% if can_manage %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'projects:edit' project.pk %}" class="btn btn-outline-secondary btn-sm">Edit project</a>
+    <a href="{% url 'projects:workstream_create' project.pk %}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> New workstream</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="section-card">
+  <h6 class="mb-3">Workstreams</h6>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Workstream</th>
+          <th>Lead</th>
+          <th># Activities</th>
+          <th>% Complete</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ws in workstreams %}
+        <tr class="table-hover-row">
+          <td><a href="{% url 'projects:workstream_detail' ws.pk %}">{{ ws.name }}</a></td>
+          <td>{{ ws.lead|default:"—" }}</td>
+          <td>{{ ws.activities.count }}</td>
+          <td style="min-width:160px;">
+            <div class="progress progress-thin">
+              <div class="progress-bar bg-success" style="width: {{ ws.percent_complete }}%"></div>
+            </div>
+            <span class="small text-muted">{{ ws.percent_complete }}%</span>
+          </td>
+          <td class="text-end"><a href="{% url 'projects:workstream_detail' ws.pk %}" class="btn btn-sm btn-outline-primary">Open</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No workstreams yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

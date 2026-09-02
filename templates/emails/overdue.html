@@ -1,0 +1,7 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p style="color:#c92a2a;font-weight:bold;">The following activity is now overdue:</p>
+{% include "emails/_activity_card.html" %}
+<p>Please update its status or escalate if it is blocked.</p>
+{% endblock %}

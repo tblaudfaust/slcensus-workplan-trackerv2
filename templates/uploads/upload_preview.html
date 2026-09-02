@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load upload_extras %}
+{% block title %}Review Upload — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0"><i class="bi bi-eye"></i> Review Upload</h4>
+    <p class="text-muted small mb-0">{{ file_name }} &middot; {{ project.name }}{% if workstream %} &middot; {{ workstream.name }}{% endif %}</p>
+  </div>
+</div>
+
+{% for sheet in sheet_previews %}
+<div class="section-card mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h6 class="mb-0">Worksheet: {{ sheet.name }}</h6>
+    <div class="small">
+      <span class="badge text-bg-success">{{ sheet.valid_count }} ready</span>
+      {% if sheet.invalid_count %}<span class="badge text-bg-danger">{{ sheet.invalid_count }} with issues</span>{% endif %}
+    </div>
+  </div>
+
+  <form method="post" class="mb-3">
+    {% csrf_token %}
+    <div class="row g-2">
+      {% for field, label in fields.items %}
+      <div class="col-md-3">
+        <label class="form-label small mb-1">{{ label }}</label>
+        <select name="map__{{ sheet.name }}__{{ field }}" class="form-select form-select-sm">
+          <option value="">-- not mapped --</option>
+          {% for header in sheet.headers %}
+          <option value="{{ header }}" {% if sheet.mapping|get_item:field == header %}selected{% endif %}>{{ header }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endfor %}
+    </div>
+    <button type="submit" name="remap" value="1" class="btn btn-sm btn-outline-secondary mt-2">Update mapping</button>
+  </form>
+
+  {% if sheet.invalid_count %}
+  <div class="alert alert-warning small mb-3">
+    <strong>{{ sheet.invalid_count }} row(s) will be skipped:</strong>
+    <ul class="mb-0">
+      {% for row in sheet.invalid_rows %}
+      <li>Row {{ row.row_number }}: {{ row.errors|join:"; " }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Activity</th><th>Workstream</th><th>Start</th><th>End</th><th>Status</th><th>Responsible</th></tr></thead>
+      <tbody>
+        {% for row in sheet.sample %}
+        <tr>
+          <td>{{ row.data.name }}</td>
+          <td>{{ row.data.workstream_name }}</td>
+          <td>{{ row.data.start_date|default:"—" }}</td>
+          <td>{{ row.data.end_date|default:"—" }}</td>
+          <td>{{ row.data.status }}</td>
+          <td>{{ row.data.responsible_text|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if sheet.valid_count > 5 %}<p class="text-muted small mt-2">Showing 5 of {{ sheet.valid_count }} rows that will be imported.</p>{% endif %}
+  </div>
+</div>
+{% endfor %}
+
+<form method="post" class="d-flex gap-2">
+  {% csrf_token %}
+  <button type="submit" name="confirm" value="1" class="btn btn-success"><i class="bi bi-check-lg"></i> Confirm &amp; Import</button>
+  <button type="submit" name="cancel" value="1" class="btn btn-outline-danger">Cancel</button>
+</form>
+{% endblock %}

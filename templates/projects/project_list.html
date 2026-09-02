@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load activity_extras %}
+{% block title %}Projects — {{ block.super }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="bi bi-diagram-3"></i> Census Projects</h4>
+  {% if perms_is_admin %}
+  <a href="{% url 'projects:create' %}" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New project</a>
+  {% endif %}
+</div>
+<div class="row g-3">
+  {% for project in projects %}
+  <div class="col-md-6 col-lg-4">
+    <div class="section-card h-100 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-start">
+        <h5 class="mb-1">{{ project.name }}</h5>
+        {% if not project.is_active %}<span class="badge text-bg-secondary">Archived</span>{% endif %}
+      </div>
+      <p class="text-muted small mb-2">{{ project.census_year|default:"" }}</p>
+      <p class="mb-2">{{ project.description|truncatewords:20|default:"No description provided." }}</p>
+      <p class="small text-muted mb-1"><i class="bi bi-person"></i> Owner: {{ project.owner }}</p>
+      <p class="small text-muted mb-3"><i class="bi bi-diagram-2"></i> {{ project.workstreams.count }} workstream{{ project.workstreams.count|pluralize }}</p>
+      <a href="{% url 'projects:detail' project.pk %}" class="btn btn-outline-primary mt-auto">View details</a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12">
+    <div class="section-card text-center text-muted py-5">
+      No projects yet. {% if perms_is_admin %}<a href="{% url 'projects:create' %}">Create the first one</a>.{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
