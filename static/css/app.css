@@ -17,6 +17,80 @@ body {
   background-color: var(--ct-navy);
 }
 
+.navbar-logo {
+  height: 38px;
+  width: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #fff;
+}
+
+.login-logo {
+  height: 84px;
+  width: 84px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Compact countdown chip shown in the navbar */
+.countdown-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  color: #eef3f8;
+  white-space: nowrap;
+}
+
+.countdown-chip [data-cd-days] {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.countdown-chip [data-cd-clock] {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+/* Large countdown card shown on the dashboard */
+.countdown-card {
+  background: linear-gradient(135deg, var(--ct-navy), var(--ct-green));
+  border-radius: 0.75rem;
+  color: #fff;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.countdown-card .countdown-days {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-card .countdown-clock {
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.9;
+}
+
+.countdown-card .countdown-meta {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.countdown-card.countdown-elapsed {
+  background: linear-gradient(135deg, var(--ct-navy), var(--ct-navy-dark));
+}
+
 .navbar-census .navbar-brand,
 .navbar-census .nav-link {
   color: #eef3f8;

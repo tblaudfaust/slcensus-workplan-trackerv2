@@ -12,6 +12,7 @@ Built with Django. Designed to outgrow the current workbook: projects and workst
 - **Workbook upload** — upload the full Census workbook or a single worksheet (`.xlsx` or `.csv`). Column names are matched automatically (with a fuzzy-matching fallback) against the expected fields, previewed and validated before anything is saved, and re-uploading updates existing activities instead of duplicating them — with every change logged.
 - **Email notifications** — task assignment, approaching/overdue deadlines, "at risk" flags, status changes, milestone completions, and workstream-level overdue alerts, plus a weekly summary digest to each project owner. Reminder windows and thresholds are configurable from the app.
 - **Roles** — Administrator, Project Owner, Workstream Owner, Contributor, Viewer, each with different edit/manage permissions.
+- **Branding & countdown** — the official census logo appears in the navbar and login page (`static/img/census_logo.jpeg`), and a live countdown to a project's Census Day is shown in the navbar and as a banner on the dashboard once that project's `census_day` is set (Projects → Edit project).
 
 ## Tech stack
 

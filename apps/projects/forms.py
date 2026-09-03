@@ -20,7 +20,8 @@ class BootstrapFormMixin:
 class ProjectForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["name", "description", "census_year", "owner", "is_active"]
+        fields = ["name", "description", "census_year", "census_day", "owner", "is_active"]
+        widgets = {"census_day": forms.DateInput(attrs={"type": "date"})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

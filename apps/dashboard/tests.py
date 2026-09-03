@@ -72,3 +72,15 @@ class DashboardAccessTests(TestCase):
         response = self.client.get(reverse("dashboard:home"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Census Readiness Dashboard")
+
+    def test_countdown_card_shown_when_census_day_set(self):
+        self.project.census_day = datetime.date(2026, 12, 2)
+        self.project.save()
+        self.client.login(username="owner", password="pass12345")
+        response = self.client.get(reverse("dashboard:home"))
+        self.assertContains(response, 'data-countdown-target="2026-12-02"')
+
+    def test_countdown_card_omitted_when_census_day_unset(self):
+        self.client.login(username="owner", password="pass12345")
+        response = self.client.get(reverse("dashboard:home"))
+        self.assertNotContains(response, "data-countdown-target")

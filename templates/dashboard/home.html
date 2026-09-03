@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load activity_extras %}
+{% load activity_extras static %}
 {% block title %}Dashboard — {{ block.super }}{% endblock %}
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
@@ -25,6 +25,21 @@
     </div>
   </div>
 </div>
+
+{% if project.census_day %}
+<div class="countdown-card mb-3" data-countdown-target="{{ project.census_day|date:'Y-m-d' }}">
+  <img src="{% static 'img/census_logo.jpeg' %}" alt="2026 Census logo" style="height:64px;width:64px;border-radius:50%;object-fit:cover;">
+  <div>
+    <div class="countdown-days" data-cd-days></div>
+    <div class="countdown-meta" data-cd-label></div>
+  </div>
+  <div class="countdown-clock" data-cd-clock></div>
+  <div class="ms-auto text-end">
+    <div class="countdown-meta">Census Day</div>
+    <div class="fs-5 fw-semibold">{{ project.census_day|date:"d F Y" }}</div>
+  </div>
+</div>
+{% endif %}
 
 <form method="get" class="section-card mb-3">
   <div class="row g-2 align-items-end">

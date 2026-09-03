@@ -11,6 +11,11 @@ class Project(models.Model):
     name = models.CharField(max_length=200, unique=True)
     description = models.TextField(blank=True)
     census_year = models.PositiveIntegerField(null=True, blank=True)
+    census_day = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Reference/enumeration day the dashboard countdown counts down to.",
+    )
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

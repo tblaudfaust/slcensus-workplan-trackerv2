@@ -13,8 +13,9 @@
 {% if user.is_authenticated %}
 <nav class="navbar navbar-expand-lg navbar-census navbar-dark">
   <div class="container-fluid px-4">
-    <a class="navbar-brand fw-semibold" href="{% url 'dashboard:home' %}">
-      <i class="bi bi-clipboard2-data"></i> Census Workplan Tracker
+    <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{% url 'dashboard:home' %}">
+      <img src="{% static 'img/census_logo.jpeg' %}" alt="2026 Census logo" class="navbar-logo">
+      <span>Census Workplan Tracker</span>
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
       <span class="navbar-toggler-icon"></span>
@@ -33,6 +34,14 @@
         {% endif %}
       </ul>
       <ul class="navbar-nav align-items-lg-center">
+        {% if active_project.census_day %}
+        <li class="nav-item me-2">
+          <span class="countdown-chip" data-countdown-target="{{ active_project.census_day|date:'Y-m-d' }}">
+            <i class="bi bi-hourglass-split"></i>
+            <span data-cd-days></span> <span data-cd-label></span>
+          </span>
+        </li>
+        {% endif %}
         {% if nav_projects|length > 1 %}
         <li class="nav-item dropdown me-2">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -81,6 +90,7 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{% static 'js/countdown.js' %}"></script>
 {% block extra_scripts %}{% endblock %}
 </body>
 </html>
