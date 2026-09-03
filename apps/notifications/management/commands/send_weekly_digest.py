@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 
 from apps.activities.models import Activity, Status
-from apps.notifications.emailing import eligible_recipients, send_notification
+from apps.notifications.emailing import eligible_recipients, project_owner_recipients, send_notification
 from apps.notifications.models import RuleType
 from apps.projects.models import Project
 
@@ -15,7 +15,7 @@ class Command(BaseCommand):
         week_end = today + timezone.timedelta(days=7)
         sent = 0
 
-        for project in Project.objects.filter(is_active=True).select_related("owner"):
+        for project in Project.objects.filter(is_active=True).select_related("owner", "co_owner"):
             activities = list(Activity.objects.filter(project=project).select_related("workstream"))
             if not activities:
                 continue
@@ -35,22 +35,25 @@ class Command(BaseCommand):
             )
             workstream_rows = self._workstream_rows(project, activities)
 
-            recipients = eligible_recipients(project.owner)
-            sent += send_notification(
-                rule_type=RuleType.WEEKLY_DIGEST,
-                template="weekly_digest",
-                subject=f"[Census Tracker] Weekly summary: {project.name}",
-                context={
-                    "recipient_name": project.owner.get_full_name() or project.owner.username,
-                    "project": project,
-                    "readiness": readiness,
-                    "overdue": overdue[:15],
-                    "at_risk": at_risk[:15],
-                    "upcoming": upcoming[:15],
-                    "workstream_rows": workstream_rows,
-                },
-                recipients=recipients,
-            )
+            # Sent per-recipient (rather than one send_notification call
+            # covering both) so the Owner and Co-Owner each get their own
+            # name in the greeting instead of both seeing the Owner's.
+            for recipient in eligible_recipients(*project_owner_recipients(project)):
+                sent += send_notification(
+                    rule_type=RuleType.WEEKLY_DIGEST,
+                    template="weekly_digest",
+                    subject=f"[Census Tracker] Weekly summary: {project.name}",
+                    context={
+                        "recipient_name": recipient.get_full_name() or recipient.username,
+                        "project": project,
+                        "readiness": readiness,
+                        "overdue": overdue[:15],
+                        "at_risk": at_risk[:15],
+                        "upcoming": upcoming[:15],
+                        "workstream_rows": workstream_rows,
+                    },
+                    recipients=[recipient],
+                )
 
         self.stdout.write(self.style.SUCCESS(f"send_weekly_digest: sent {sent} email(s)."))
 

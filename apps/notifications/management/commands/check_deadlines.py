@@ -5,7 +5,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.activities.models import Activity, Status
-from apps.notifications.emailing import already_sent_today, eligible_recipients, send_notification
+from apps.notifications.emailing import already_sent_today, eligible_recipients, project_owner_recipients, send_notification
 from apps.notifications.models import NotificationLog, NotificationRule, RuleType
 
 
@@ -60,7 +60,7 @@ class Command(BaseCommand):
         for activity in activities:
             if already_sent_today(RuleType.OVERDUE, activity):
                 continue
-            recipients = eligible_recipients(activity.responsible, activity.project.owner)
+            recipients = eligible_recipients(activity.responsible, *project_owner_recipients(activity.project))
             if not recipients:
                 continue
             count += send_notification(
@@ -81,7 +81,7 @@ class Command(BaseCommand):
         overdue_by_workstream = defaultdict(list)
         activities = Activity.objects.filter(
             end_date__lt=today, status__in=Status.open_statuses()
-        ).select_related("workstream", "workstream__lead", "project", "project__owner")
+        ).select_related("workstream", "workstream__lead", "project", "project__owner", "project__co_owner")
         for activity in activities:
             overdue_by_workstream[activity.workstream].append(activity)
 
@@ -94,7 +94,7 @@ class Command(BaseCommand):
             ).exists()
             if already_sent:
                 continue
-            recipients = eligible_recipients(workstream.project.owner, workstream.lead)
+            recipients = eligible_recipients(*project_owner_recipients(workstream.project), workstream.lead)
             if not recipients:
                 continue
             count += send_notification(

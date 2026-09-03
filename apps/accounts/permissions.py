@@ -36,12 +36,19 @@ def can_upload_workplans(user):
     return is_admin(user) or is_project_owner(user) or is_workstream_owner(user)
 
 
+def is_owner_of_project(user, project):
+    """True if this user is the project's Owner or Co-Owner -- the two
+    have identical authority and both receive project-owner alerts, so
+    every check below treats them interchangeably."""
+    return project.owner_id == user.id or project.co_owner_id == user.id
+
+
 def can_manage_project(user, project):
     """Create/edit workstreams, assign owners, edit any activity in the project."""
     if is_admin(user):
         return True
     if is_project_owner(user):
-        return project.owner_id == user.id
+        return is_owner_of_project(user, project)
     return False
 
 
@@ -66,7 +73,7 @@ def can_edit_activity(user, activity):
     if is_admin(user):
         return True
     if is_project_owner(user):
-        return activity.project.owner_id == user.id
+        return is_owner_of_project(user, activity.project)
     if is_workstream_owner(user):
         return activity.workstream_id in owned_workstream_ids(user)
     if is_contributor(user):
@@ -84,7 +91,7 @@ def can_validate_completion(user, activity):
     if is_admin(user):
         return True
     if is_project_owner(user):
-        return activity.project.owner_id == user.id
+        return is_owner_of_project(user, activity.project)
     if is_workstream_owner(user):
         return activity.workstream_id in owned_workstream_ids(user)
     return False
@@ -99,7 +106,7 @@ def can_delete_activity(user, activity):
     if is_admin(user):
         return True
     if is_project_owner(user):
-        return activity.project.owner_id == user.id
+        return is_owner_of_project(user, activity.project)
     return False
 
 

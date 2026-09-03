@@ -58,3 +58,23 @@ class PermissionTests(TestCase):
         self.assertTrue(permissions.can_upload_workplans(self.ws_owner))
         self.assertFalse(permissions.can_upload_workplans(self.contributor))
         self.assertFalse(permissions.can_upload_workplans(self.viewer))
+
+
+class CoOwnerPermissionTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER)
+        self.co_owner = User.objects.create_user("co_owner", password="x", role=Role.PROJECT_OWNER)
+        self.other_owner = User.objects.create_user("other", password="x", role=Role.PROJECT_OWNER)
+        self.project = Project.objects.create(name="Census", owner=self.owner, co_owner=self.co_owner)
+        self.workstream = Workstream.objects.create(project=self.project, name="GIS")
+        self.activity = Activity.objects.create(project=self.project, workstream=self.workstream, name="Task")
+
+    def test_co_owner_has_same_rights_as_owner(self):
+        self.assertTrue(permissions.can_manage_project(self.co_owner, self.project))
+        self.assertTrue(permissions.can_edit_activity(self.co_owner, self.activity))
+        self.assertTrue(permissions.can_delete_activity(self.co_owner, self.activity))
+        self.assertTrue(permissions.can_validate_completion(self.co_owner, self.activity))
+
+    def test_unrelated_project_owner_still_excluded(self):
+        self.assertFalse(permissions.can_manage_project(self.other_owner, self.project))
+        self.assertFalse(permissions.can_edit_activity(self.other_owner, self.activity))

@@ -11,7 +11,7 @@ class WorkstreamInline(admin.TabularInline):
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("name", "census_year", "census_day", "owner", "is_active", "created_at")
+    list_display = ("name", "census_year", "census_day", "owner", "co_owner", "is_active", "created_at")
     list_filter = ("is_active",)
     search_fields = ("name",)
     inlines = [WorkstreamInline]

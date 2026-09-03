@@ -43,6 +43,13 @@ def activity_owner_recipients(activity):
     return [u for u in (activity.workstream.lead, activity.workstream.backup_lead) if u]
 
 
+def project_owner_recipients(project):
+    """The Owner and Co-Owner (if set) -- the two share identical
+    authority, so anything that used to alert just "the project owner"
+    alerts both."""
+    return [u for u in (project.owner, project.co_owner) if u]
+
+
 def send_notification(*, rule_type, template, subject, context, recipients, activity=None, workstream=None):
     """Renders templates/emails/{template}.html, sends to each recipient
     individually (so failures/opt-outs don't block the batch), and logs

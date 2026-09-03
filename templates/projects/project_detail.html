@@ -6,6 +6,10 @@
   <div>
     <h4 class="mb-0">{{ project.name }}</h4>
     <p class="text-muted mb-0">{{ project.description }}</p>
+    <p class="text-muted small mb-0">
+      Owner: {{ project.owner }}
+      {% if project.co_owner %}&middot; Co-Owner: {{ project.co_owner }}{% endif %}
+    </p>
   </div>
   {% if can_manage %}
   <div class="d-flex gap-2">

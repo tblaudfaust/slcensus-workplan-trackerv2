@@ -22,6 +22,14 @@ class Project(models.Model):
         related_name="owned_projects",
         help_text="Project Owner accountable for overall delivery; receives the weekly summary email.",
     )
+    co_owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="co_owned_projects",
+        help_text="Second Project Owner with the same authority and alerts as the primary owner.",
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

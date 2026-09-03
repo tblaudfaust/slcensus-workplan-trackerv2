@@ -249,26 +249,27 @@ def activity_send_back(request, pk):
 
 
 def _notify_completion_validated(activity):
-    from apps.notifications.emailing import eligible_recipients, rule_enabled, send_notification
+    from apps.notifications.emailing import eligible_recipients, project_owner_recipients, rule_enabled, send_notification
     from apps.notifications.models import RuleType
 
     if not rule_enabled(RuleType.COMPLETION_VALIDATED):
         return
-    owner = activity.project.owner
-    recipients = eligible_recipients(owner)
-    send_notification(
-        rule_type=RuleType.COMPLETION_VALIDATED,
-        template="completion_validated",
-        subject=f"[Census Tracker] Completion validated: {activity.name}",
-        context={
-            "activity": activity,
-            "recipient_name": owner.get_full_name() or owner.username,
-            "validated_by": activity.validated_by,
-            "validated_at": activity.validated_at,
-        },
-        recipients=recipients,
-        activity=activity,
-    )
+    # One send per recipient so the Owner and Co-Owner each see their own
+    # name in the greeting.
+    for recipient in eligible_recipients(*project_owner_recipients(activity.project)):
+        send_notification(
+            rule_type=RuleType.COMPLETION_VALIDATED,
+            template="completion_validated",
+            subject=f"[Census Tracker] Completion validated: {activity.name}",
+            context={
+                "activity": activity,
+                "recipient_name": recipient.get_full_name() or recipient.username,
+                "validated_by": activity.validated_by,
+                "validated_at": activity.validated_at,
+            },
+            recipients=[recipient],
+            activity=activity,
+        )
 
 
 @login_required

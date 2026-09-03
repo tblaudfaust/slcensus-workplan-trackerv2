@@ -9,7 +9,13 @@ from apps.activities.models import Activity, Status
 from apps.projects.models import Project, Workstream
 
 from .apps import _seed_default_rules
-from .emailing import activity_owner_recipients, already_sent_today, eligible_recipients, send_notification
+from .emailing import (
+    activity_owner_recipients,
+    already_sent_today,
+    eligible_recipients,
+    project_owner_recipients,
+    send_notification,
+)
 from .models import NotificationLog, NotificationRule, RuleType
 
 
@@ -73,6 +79,19 @@ class ActivityOwnerRecipientsTests(TestCase):
         bare_ws = Workstream.objects.create(project=self.project, name="Publicity")
         activity = Activity.objects.create(project=self.project, workstream=bare_ws, name="Task")
         self.assertEqual(activity_owner_recipients(activity), [])
+
+
+class ProjectOwnerRecipientsTests(TestCase):
+    def test_includes_both_owner_and_co_owner(self):
+        owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER)
+        co_owner = User.objects.create_user("co_owner", password="x", role=Role.PROJECT_OWNER)
+        project = Project.objects.create(name="Census", owner=owner, co_owner=co_owner)
+        self.assertEqual(project_owner_recipients(project), [owner, co_owner])
+
+    def test_omits_unset_co_owner(self):
+        owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER)
+        project = Project.objects.create(name="Census", owner=owner)
+        self.assertEqual(project_owner_recipients(project), [owner])
 
 
 class SendNotificationTests(TestCase):
@@ -213,3 +232,38 @@ class ValidationNotificationTests(TestCase):
                 rule_type=RuleType.COMPLETION_VALIDATED, recipient_email="owner@example.org"
             ).exists()
         )
+
+    def test_validating_notifies_the_co_owner_too(self):
+        from django.urls import reverse
+
+        co_owner = User.objects.create_user(
+            "co_owner", password="x", role=Role.PROJECT_OWNER, email="co-owner@example.org"
+        )
+        self.project.co_owner = co_owner
+        self.project.save()
+
+        self.client.login(username="lead", password="pass12345")
+        self.client.post(reverse("activities:validate", args=[self.activity.pk]))
+        self.assertTrue(
+            NotificationLog.objects.filter(
+                rule_type=RuleType.COMPLETION_VALIDATED, recipient_email="co-owner@example.org"
+            ).exists()
+        )
+
+
+class WeeklyDigestCoOwnerTests(TestCase):
+    def test_digest_sent_to_both_owner_and_co_owner(self):
+        from django.core.management import call_command
+
+        owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER, email="owner@example.org")
+        co_owner = User.objects.create_user(
+            "co_owner", password="x", role=Role.PROJECT_OWNER, email="co-owner@example.org"
+        )
+        project = Project.objects.create(name="Census", owner=owner, co_owner=co_owner)
+        ws = Workstream.objects.create(project=project, name="GIS")
+        Activity.objects.create(project=project, workstream=ws, name="Task", status=Status.ONGOING)
+
+        call_command("send_weekly_digest")
+
+        self.assertTrue(NotificationLog.objects.filter(recipient_email="owner@example.org").exists())
+        self.assertTrue(NotificationLog.objects.filter(recipient_email="co-owner@example.org").exists())

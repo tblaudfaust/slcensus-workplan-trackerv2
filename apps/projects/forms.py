@@ -20,14 +20,21 @@ class BootstrapFormMixin:
 class ProjectForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Project
-        fields = ["name", "description", "census_year", "census_day", "owner", "is_active"]
+        fields = ["name", "description", "census_year", "census_day", "owner", "co_owner", "is_active"]
         widgets = {"census_day": forms.DateInput(attrs={"type": "date"})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["owner"].queryset = User.objects.filter(
-            role__in=[Role.ADMIN, Role.PROJECT_OWNER], is_active=True
-        )
+        owner_pool = User.objects.filter(role__in=[Role.ADMIN, Role.PROJECT_OWNER], is_active=True)
+        self.fields["owner"].queryset = owner_pool
+        self.fields["co_owner"].queryset = owner_pool
+
+    def clean(self):
+        cleaned = super().clean()
+        owner, co_owner = cleaned.get("owner"), cleaned.get("co_owner")
+        if owner and co_owner and owner == co_owner:
+            self.add_error("co_owner", "Co-owner must be a different person than the owner.")
+        return cleaned
 
 
 class WorkstreamForm(BootstrapFormMixin, forms.ModelForm):

@@ -130,14 +130,14 @@ class _WorkstreamActivityStandin:
 @login_required
 def workstream_send_alert(request, pk):
     workstream = get_object_or_404(
-        Workstream.objects.select_related("project", "project__owner", "lead", "backup_lead"), pk=pk
+        Workstream.objects.select_related("project", "project__owner", "project__co_owner", "lead", "backup_lead"), pk=pk
     )
     if not permissions.can_validate_completion(request.user, _WorkstreamActivityStandin(workstream)):
         messages.error(request, "You don't have permission to send an alert for this workstream.")
         return redirect("projects:workstream_detail", workstream.pk)
 
     if request.method == "POST":
-        from apps.notifications.emailing import eligible_recipients, send_notification
+        from apps.notifications.emailing import eligible_recipients, project_owner_recipients, send_notification
         from apps.notifications.models import RuleType
 
         from apps.activities.models import Status
@@ -148,7 +148,9 @@ def workstream_send_alert(request, pk):
         overdue = sum(1 for a in activities if a.is_overdue)
         percent = round((completed / total) * 100) if total else 0
 
-        recipients = eligible_recipients(workstream.lead, workstream.backup_lead, workstream.project.owner)
+        recipients = eligible_recipients(
+            workstream.lead, workstream.backup_lead, *project_owner_recipients(workstream.project)
+        )
         message = request.POST.get("message", "").strip()
         sent = send_notification(
             rule_type=RuleType.MANUAL_ALERT,
