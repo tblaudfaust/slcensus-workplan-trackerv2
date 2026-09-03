@@ -8,7 +8,7 @@ from apps.accounts.models import Role, User
 from apps.activities.models import Activity, Status
 from apps.projects.models import Project, Workstream
 
-from .parsing import match_columns, normalize_header, normalize_status_text, parse_sheet
+from .parsing import _promote_header_row, match_columns, normalize_header, normalize_status_text, parse_sheet
 from .services import commit_upload
 
 
@@ -60,6 +60,38 @@ class StatusNormalizationTests(TestCase):
     def test_pending_maps_to_not_started(self):
         status, progress = normalize_status_text("Pending review from HQ")
         self.assertEqual(status, "NOT_STARTED")
+
+
+class PromoteHeaderRowTests(TestCase):
+    def test_well_formed_sheet_uses_row_zero_as_header(self):
+        raw = pd.DataFrame(
+            [
+                ["Milestone / Activity", "Start Date", "End Date"],
+                ["Task A", "2026-01-01", "2026-01-10"],
+            ]
+        )
+        result = _promote_header_row(raw)
+        self.assertEqual(list(result.columns), ["Milestone / Activity", "Start Date", "End Date"])
+        self.assertEqual(len(result), 1)
+
+    def test_title_row_above_header_is_detected_and_skipped(self):
+        raw = pd.DataFrame(
+            [
+                ["STATISTICS SIERRA LEONE, 2026 PHC WORKPLAN", "", "", ""],
+                ["", "", "", ""],
+                ["No.", "Milestone / Activity", "Start Date", "End Date"],
+                ["1", "Task A", "2026-01-01", "2026-01-10"],
+            ]
+        )
+        result = _promote_header_row(raw)
+        self.assertIn("Milestone / Activity", list(result.columns))
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result.iloc[0]["Milestone / Activity"], "Task A")
+
+    def test_sheet_with_no_recognizable_header_falls_back_to_row_zero(self):
+        raw = pd.DataFrame([["Foo", "Bar"], ["1", "2"]])
+        result = _promote_header_row(raw)
+        self.assertEqual(list(result.columns), ["Foo", "Bar"])
 
 
 class ParseSheetTests(TestCase):

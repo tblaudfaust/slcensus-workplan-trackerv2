@@ -67,7 +67,7 @@ STATUS_KEYWORDS = [
     ("DELAYED", ["delayed", "behind schedule", "late", "slipped"]),
     ("AT_RISK", ["at risk", "at-risk", "risk", "critical"]),
     ("ONGOING", ["ongoing", "in progress", "in-progress", "on track", "on-track", "started"]),
-    ("NOT_STARTED", ["not started", "not yet started", "pending", "yet to start", "planned"]),
+    ("NOT_STARTED", ["not started", "not yet started", "pending", "yet to start", "planned", "scheduled"]),
 ]
 
 _PERCENT_RE = re.compile(r"(\d{1,3})\s*%")
@@ -116,17 +116,54 @@ def match_columns(headers):
     return mapping, unmatched
 
 
+HEADER_SCAN_ROWS = 10
+MIN_HEADER_MATCHES = 2
+
+
+def _promote_header_row(df):
+    """Real-world workbooks sometimes carry a title row (and a blank row)
+    above the real header -- e.g. "STATISTICS SIERRA LEONE, 2026 PHC
+    WORKPLAN..." merged across columns A:H, with the actual "Milestone /
+    Activity", "Start Date", ... header one or two rows down. Detects that
+    by scanning the first few rows for the one that matches the most known
+    field aliases, and promotes it to the header if it looks better than
+    row 0. Sheets whose header is already row 0 (the common case) are
+    returned unchanged."""
+    if df.empty:
+        return df
+
+    scan_limit = min(HEADER_SCAN_ROWS, len(df))
+    best_row, best_score = 0, -1
+    for i in range(scan_limit):
+        candidate = [str(v) for v in df.iloc[i].tolist()]
+        mapping, _ = match_columns(candidate)
+        score = len(mapping)
+        if score > best_score:
+            best_row, best_score = i, score
+
+    # Row 0 is used as a fallback header whenever nothing scored well
+    # enough to be confident -- this preserves the previous default
+    # behaviour (first row is the header) for sheets with no recognizable
+    # standard columns at all.
+    header_row = best_row if best_score >= MIN_HEADER_MATCHES else 0
+
+    new_header = [str(v).strip() for v in df.iloc[header_row].tolist()]
+    data = df.iloc[header_row + 1 :].reset_index(drop=True)
+    data.columns = new_header
+    return data
+
+
 def read_uploaded_file(file_obj, filename):
     """Returns {sheet_name: DataFrame}. A CSV becomes a single "pseudo
     sheet" named after the file (minus extension)."""
     raw = file_obj.read()
     lower = filename.lower()
     if lower.endswith(".csv"):
-        df = pd.read_csv(io.BytesIO(raw), dtype=str, keep_default_na=False)
+        df = pd.read_csv(io.BytesIO(raw), dtype=str, keep_default_na=False, header=None)
         stem = re.sub(r"\.csv$", "", filename, flags=re.IGNORECASE)
-        return {stem: df}
-    sheets = pd.read_excel(io.BytesIO(raw), sheet_name=None, dtype=str, keep_default_na=False)
-    return sheets
+        return {stem: _promote_header_row(df)}
+    raw_sheets = pd.read_excel(io.BytesIO(raw), sheet_name=None, dtype=str, keep_default_na=False, header=None)
+    return {name: _promote_header_row(df) for name, df in raw_sheets.items()}
 
 
 def _parse_date(value):
