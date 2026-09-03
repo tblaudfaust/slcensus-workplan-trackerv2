@@ -78,26 +78,26 @@
 
 <div class="row g-3 mb-3">
   <div class="col-6 col-md-3 col-lg-2">
-    <div class="kpi-card p-3">
+    <div class="kpi-card kpi-accent-blue p-3">
       <div class="kpi-value">{{ kpis.total }}</div>
       <div class="kpi-label">Total Activities</div>
     </div>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
-    <div class="kpi-card p-3">
+    <div class="kpi-card kpi-accent-green p-3">
       <div class="kpi-value text-success">{{ kpis.status_counts.COMPLETED }}</div>
       <div class="kpi-label">Completed</div>
     </div>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
-    <div class="kpi-card p-3">
+    <div class="kpi-card kpi-accent-blue p-3">
       <div class="kpi-value text-primary">{{ kpis.status_counts.ONGOING }}</div>
       <div class="kpi-label">Ongoing</div>
     </div>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
     <a href="{{ at_risk_url }}" class="kpi-card-link" title="View at-risk activities">
-      <div class="kpi-card p-3">
+      <div class="kpi-card kpi-accent-amber p-3">
         <div class="kpi-value" style="color:var(--ct-amber);">{{ kpis.status_counts.AT_RISK }}</div>
         <div class="kpi-label">At Risk <i class="bi bi-box-arrow-up-right small"></i></div>
       </div>
@@ -105,7 +105,7 @@
   </div>
   <div class="col-6 col-md-3 col-lg-2">
     <a href="{{ overdue_url }}" class="kpi-card-link" title="View overdue activities">
-      <div class="kpi-card p-3">
+      <div class="kpi-card kpi-accent-red p-3">
         <div class="kpi-value text-danger">{{ kpis.overdue }}</div>
         <div class="kpi-label">Overdue <i class="bi bi-box-arrow-up-right small"></i></div>
       </div>

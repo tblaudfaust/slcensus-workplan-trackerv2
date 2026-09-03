@@ -5,20 +5,73 @@
   --ct-navy: #1955a8;
   --ct-navy-dark: #123f7d;
   --ct-accent: #1c7ed6;
+  --ct-accent-light: #4c9aeb;
   --ct-blue-pale: #eaf2fd;
   --ct-green: #2f9e44;
   --ct-amber: #f08c00;
   --ct-red: #e03131;
+  --ct-purple: #5f3dc4;
   --ct-gray: #868e96;
-  --ct-bg: #f5f8fd;
+  --ct-bg: #f3f7fc;
+  --ct-ink: #1b2733;
+  --ct-border: #e7edf5;
+
+  /* A layered, low-contrast elevation scale reads as "soft" rather than
+     "flat + a plain drop shadow" -- used instead of a single box-shadow
+     value everywhere. */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 1px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 2px 6px rgba(16, 24, 40, 0.06), 0 8px 20px rgba(16, 24, 40, 0.06);
+  --shadow-lg: 0 8px 16px rgba(16, 24, 40, 0.08), 0 20px 40px rgba(16, 24, 40, 0.1);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c3d3e8 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c3d3e8;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 body {
   background-color: var(--ct-bg);
+  color: var(--ct-ink);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
 
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--ct-navy);
+}
+
+a:hover {
+  color: var(--ct-navy-dark);
+}
+
+/* ---------------------------------------------------------------------
+   Navbar
+------------------------------------------------------------------------ */
+
 .navbar-census {
-  background-color: var(--ct-navy);
+  background: linear-gradient(180deg, var(--ct-navy) 0%, #164a97 100%);
+  box-shadow: 0 2px 10px rgba(9, 38, 79, 0.18);
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
 }
 
 .navbar-logo {
@@ -27,6 +80,56 @@ body {
   border-radius: 50%;
   object-fit: cover;
   background: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+
+.navbar-census .navbar-brand {
+  letter-spacing: -0.01em;
+  font-weight: 700;
+}
+
+.navbar-census .navbar-brand,
+.navbar-census .nav-link {
+  color: #e4edfa;
+}
+
+.navbar-census .nav-link {
+  border-radius: 0.5rem;
+  padding-left: 0.65rem !important;
+  padding-right: 0.65rem !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.navbar-census .nav-link:hover,
+.navbar-census .nav-link:focus {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.navbar-census .nav-link.active {
+  color: #ffffff;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.navbar-census .dropdown-menu {
+  border: none;
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-lg);
+  padding: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.navbar-census .dropdown-item {
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.navbar-census .dropdown-item:hover,
+.navbar-census .dropdown-item.active {
+  background-color: var(--ct-blue-pale);
+  color: var(--ct-navy);
 }
 
 .login-logo {
@@ -34,9 +137,30 @@ body {
   width: 84px;
   border-radius: 50%;
   object-fit: cover;
+  box-shadow: 0 0 0 6px var(--ct-blue-pale);
 }
 
-/* Compact countdown chip shown in the navbar */
+.login-shell {
+  min-height: 88vh;
+  display: flex;
+  align-items: center;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(28, 126, 214, 0.1), transparent 40%),
+    radial-gradient(circle at 88% 92%, rgba(25, 85, 168, 0.12), transparent 45%);
+  margin: -1.5rem -1.5rem 0;
+  padding: 1.5rem;
+}
+
+.login-card {
+  border-top: 4px solid var(--ct-navy);
+  box-shadow: var(--shadow-lg);
+  padding: 2.25rem 2rem;
+}
+
+/* ---------------------------------------------------------------------
+   Countdown
+------------------------------------------------------------------------ */
+
 .countdown-chip {
   display: inline-flex;
   align-items: center;
@@ -59,16 +183,26 @@ body {
   opacity: 0.85;
 }
 
-/* Large countdown card shown on the dashboard */
 .countdown-card {
-  background: linear-gradient(135deg, var(--ct-navy), var(--ct-accent));
-  border-radius: 0.75rem;
+  background: linear-gradient(135deg, var(--ct-navy) 0%, var(--ct-accent) 100%);
+  border-radius: 1rem;
   color: #fff;
-  padding: 1.5rem;
+  padding: 1.5rem 1.75rem;
   display: flex;
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.countdown-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 85% -10%, rgba(255, 255, 255, 0.22), transparent 55%);
+  pointer-events: none;
 }
 
 .countdown-card .countdown-days {
@@ -85,9 +219,9 @@ body {
 }
 
 .countdown-card .countdown-meta {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   opacity: 0.85;
 }
 
@@ -95,24 +229,33 @@ body {
   background: linear-gradient(135deg, var(--ct-navy), var(--ct-navy-dark));
 }
 
-.navbar-census .navbar-brand,
-.navbar-census .nav-link {
-  color: #eef3f8;
-}
+/* ---------------------------------------------------------------------
+   Cards
+------------------------------------------------------------------------ */
 
-.navbar-census .nav-link:hover,
-.navbar-census .nav-link.active {
-  color: #ffffff;
-  font-weight: 600;
+.section-card {
+  background: #fff;
+  border: 1px solid var(--ct-border);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-sm);
+  padding: 1.35rem;
 }
 
 .kpi-card {
-  border: none;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+  border: 1px solid var(--ct-border);
+  border-top: 3px solid var(--ct-gray);
+  border-radius: 0.9rem;
+  box-shadow: var(--shadow-sm);
   height: 100%;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+  background: #fff;
 }
+
+.kpi-card.kpi-accent-blue { border-top-color: var(--ct-accent); }
+.kpi-card.kpi-accent-green { border-top-color: var(--ct-green); }
+.kpi-card.kpi-accent-amber { border-top-color: var(--ct-amber); }
+.kpi-card.kpi-accent-red { border-top-color: var(--ct-red); }
+.kpi-card.kpi-accent-purple { border-top-color: var(--ct-purple); }
 
 .kpi-card-link {
   display: block;
@@ -122,8 +265,8 @@ body {
 }
 
 .kpi-card-link:hover .kpi-card {
-  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.15);
-  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 
 .kpi-card-link .kpi-label .bi-box-arrow-up-right {
@@ -132,57 +275,138 @@ body {
 }
 
 .kpi-card .kpi-value {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 2.1rem;
+  font-weight: 800;
   line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .kpi-card .kpi-label {
   color: var(--ct-gray);
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.status-badge {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  padding: 0.3em 0.65em;
-  border-radius: 999px;
-}
-
-.status-NOT_STARTED { background-color: #e9ecef; color: #495057; }
-.status-ONGOING { background-color: #d0ebff; color: #1864ab; }
-.status-PENDING_VALIDATION { background-color: #e5dbff; color: #5f3dc4; }
-.status-COMPLETED { background-color: #d3f9d8; color: #2b8a3e; }
-.status-DELAYED { background-color: #ffe3e3; color: #c92a2a; }
-.status-AT_RISK { background-color: #fff3bf; color: #e67700; }
-.status-OVERDUE { background-color: #e03131; color: #ffffff; }
-
-.progress-thin {
-  height: 0.5rem;
-}
-
-.section-card {
-  background: #fff;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
-  padding: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .readiness-gauge {
-  font-size: 2.5rem;
+  font-size: 2.6rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* ---------------------------------------------------------------------
+   Status badges -- a leading dot keeps status legible even for a viewer
+   who can't distinguish the background tint, on top of the color coding.
+------------------------------------------------------------------------ */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.32em 0.7em;
+  border-radius: 999px;
+}
+
+.status-badge::before {
+  content: "";
+  width: 0.45em;
+  height: 0.45em;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.status-NOT_STARTED { background-color: #eef1f4; color: #4a5568; }
+.status-ONGOING { background-color: #d7e9ff; color: #1864ab; }
+.status-PENDING_VALIDATION { background-color: #e8defc; color: #5f3dc4; }
+.status-COMPLETED { background-color: #d3f9d8; color: #2b8a3e; }
+.status-DELAYED { background-color: #ffe3e3; color: #c92a2a; }
+.status-AT_RISK { background-color: #fff3bf; color: #b8690a; }
+.status-OVERDUE { background-color: #e03131; color: #ffffff; }
+
+/* ---------------------------------------------------------------------
+   Tables
+------------------------------------------------------------------------ */
+
+.table {
+  --bs-table-color: var(--ct-ink);
+}
+
+.section-card table thead th,
+.table thead th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ct-gray);
+  border-bottom-width: 1px;
+  border-bottom-color: var(--ct-border);
+  padding-top: 0.35rem;
+  padding-bottom: 0.6rem;
+}
+
+.table-hover-row {
+  transition: background-color 0.1s ease;
 }
 
 .table-hover-row:hover {
   background-color: var(--ct-blue-pale);
 }
 
-.gantt-wrapper {
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 520px;
+.progress-thin {
+  height: 0.45rem;
+  border-radius: 999px;
+  background-color: #eef1f6;
+}
+
+.progress-thin .progress-bar {
+  border-radius: 999px;
+}
+
+/* ---------------------------------------------------------------------
+   Buttons + forms
+------------------------------------------------------------------------ */
+
+.btn {
+  font-weight: 600;
+  border-radius: 0.55rem;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--ct-navy);
+  border-color: var(--ct-navy);
+  box-shadow: 0 1px 2px rgba(25, 85, 168, 0.15);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--ct-navy-dark);
+  border-color: var(--ct-navy-dark);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+.btn-outline-primary {
+  color: var(--ct-navy);
+  border-color: var(--ct-navy);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--ct-navy);
+  border-color: var(--ct-navy);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ct-accent-light);
+  box-shadow: 0 0 0 0.2rem rgba(28, 126, 214, 0.15);
 }
 
 /* Bare Django-rendered widgets (e.g. AdminPasswordChangeForm) that don't
@@ -198,8 +422,28 @@ main select:not(.form-select) {
   border-radius: 0.375rem;
 }
 
+/* ---------------------------------------------------------------------
+   Misc
+------------------------------------------------------------------------ */
+
+.gantt-wrapper {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 520px;
+}
+
 .history-entry {
   border-left: 3px solid var(--ct-accent);
   padding-left: 0.75rem;
   margin-bottom: 0.75rem;
+}
+
+.alert {
+  border: none;
+  border-radius: 0.75rem;
+}
+
+::selection {
+  background: var(--ct-blue-pale);
+  color: var(--ct-navy-dark);
 }
