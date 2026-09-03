@@ -33,6 +33,20 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
+# Render (and most PaaS platforms) terminate TLS at a load balancer and
+# forward plain HTTP to the container, setting X-Forwarded-Proto so the app
+# can tell the original request was HTTPS. Without this, Django thinks
+# every request is insecure -- breaking secure cookies and SECURE_SSL_REDIRECT.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Render sets this automatically to the service's own *.onrender.com
+# hostname; picking it up here means ALLOWED_HOSTS/CSRF_TRUSTED_ORIGINS
+# don't need to be hand-maintained for the default Render URL.
+_render_host = env("RENDER_EXTERNAL_HOSTNAME", default="")
+if _render_host:
+    ALLOWED_HOSTS.append(_render_host)
+    CSRF_TRUSTED_ORIGINS.append(f"https://{_render_host}")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",

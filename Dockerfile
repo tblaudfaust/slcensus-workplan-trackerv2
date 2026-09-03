@@ -18,4 +18,10 @@ RUN python manage.py collectstatic --noinput
 
 EXPOSE 8000
 
-CMD ["gunicorn", "census_tracker.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Runs migrations before starting the app server every time the container
+# boots -- safe to repeat (Django tracks applied migrations) and means a
+# fresh deploy on a platform like Render never needs a separate manual
+# migrate step. $PORT is read from the environment (PaaS platforms assign
+# it dynamically); defaults to 8000 for docker-compose / local `docker run`.
+CMD python manage.py migrate --noinput && \
+    gunicorn census_tracker.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3

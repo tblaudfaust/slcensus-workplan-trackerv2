@@ -28,9 +28,6 @@ services:
       - "8000:8000"
     volumes:
       - media_data:/app/media
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             gunicorn census_tracker.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
 volumes:
   postgres_data:

@@ -108,6 +108,34 @@ python manage.py test
 
 ## Deployment
 
+### Render (public hosting, free tier)
+
+This is the quickest way to get the app reachable on the public internet with a free URL. `render.yaml` in the repo root defines everything Render needs to build it (see [Render's Blueprint docs](https://render.com/docs/infrastructure-as-code) for the current field reference, in case Render's schema has moved on since this was written).
+
+1. **Push this repo to GitHub** if it isn't already (Render deploys from a Git repo, not a local folder).
+2. **Create a free Render account** at [render.com](https://render.com) — this step has to be done by a person, not an assistant: hosting accounts and payment methods aren't something that should be created on your behalf.
+3. In the Render dashboard, **New +** → **Blueprint**, and point it at this GitHub repo. Render reads `render.yaml` and proposes three resources: the `census-workplan-tracker` web service, a free PostgreSQL database, and two Cron Jobs (`census-check-deadlines`, `census-weekly-digest`).
+4. Render will prompt for the environment variables marked `sync: false` in `render.yaml` before the first deploy — fill these in for the web service (the two Cron Jobs need the same `SECRET_KEY` and email settings, kept in sync manually since Render doesn't share values between services automatically):
+
+   | Variable | Value |
+   |---|---|
+   | `EMAIL_HOST` | your SMTP host, e.g. `mail.statistics.sl` |
+   | `EMAIL_PORT` | `465` for implicit SSL, `587` for STARTTLS |
+   | `EMAIL_USE_SSL` / `EMAIL_USE_TLS` | `True` for exactly one of these, matching the port above |
+   | `EMAIL_HOST_USER` | the sending mailbox, e.g. `project@statistics.sl` |
+   | `EMAIL_HOST_PASSWORD` | that mailbox's password |
+   | `DEFAULT_FROM_EMAIL` | e.g. `Census Workplan Tracker <project@statistics.sl>` |
+   | `SITE_URL` | the `https://...onrender.com` URL Render assigns (fill in *after* the first deploy, then redeploy) |
+
+5. Deploy. Render builds the Docker image, runs migrations automatically (baked into the image's start command), and the app comes up at `https://<service-name>.onrender.com`.
+6. Log in with the admin account you created locally (`python manage.py createsuperuser`) — or, since the free Postgres starts empty, create one against the live database via Render's shell tab: **Dashboard → web service → Shell** → `python manage.py createsuperuser`.
+
+**Free-tier things worth knowing before you rely on this in production:**
+- The free web service **sleeps after ~15 minutes of no traffic** and takes a few seconds to wake back up on the next request — fine for a small team, noticeable for a first-thing-in-the-morning check. This is *why* the scheduled emails run as separate Cron Jobs rather than the in-process scheduler: cron jobs run on their own regardless of whether the web service is asleep.
+- Render's **free PostgreSQL database has a retention limit** (historically ~30 days before it's deleted, though check current terms at signup — this changes over time) — fine for a trial, but budget for Render's paid database tier before this becomes the system of record.
+- The workbook upload wizard's preview step writes a temporary file to local disk between "upload" and "confirm" — on the free plan the container's filesystem isn't a persistent disk, so this works in normal single-instance operation but isn't bulletproof against a container restart landing exactly between those two requests. Not a concern for the deadline/status features, just something to know if an upload confirmation ever fails with a missing-file error — retry the upload.
+- Upgrading to Render's paid Starter plan (~$7/mo at time of writing) removes the sleep behavior and is a reasonable next step once this is genuinely in daily use.
+
 ### Docker
 
 ```bash
