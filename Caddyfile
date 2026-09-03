@@ -7,8 +7,8 @@
 
 	encode gzip
 
-	header {
-		X-Content-Type-Options nosniff
-		Referrer-Policy strict-origin-when-cross-origin
-	}
+	# X-Content-Type-Options, Referrer-Policy, and X-Frame-Options are
+	# already set by Django's own SecurityMiddleware/clickjacking
+	# middleware -- setting them here too just produces duplicate,
+	# potentially conflicting header values on every response.
 }
