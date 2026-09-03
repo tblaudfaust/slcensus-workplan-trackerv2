@@ -17,7 +17,7 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
     CSRF_TRUSTED_ORIGINS=(list, []),
     SCHEDULER_ENABLED=(bool, True),
-    EMAIL_USE_TLS=(bool, True),
+    EMAIL_USE_SSL=(bool, False),
     REMINDER_DAYS=(list, ["1", "3", "7", "14"]),
     WORKSTREAM_OVERDUE_THRESHOLD=(int, 3),
 )
@@ -132,7 +132,10 @@ EMAIL_HOST = env("EMAIL_HOST", default="localhost")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
-EMAIL_USE_TLS = env("EMAIL_USE_TLS")
+# Port 465 (implicit SSL) and port 587 (STARTTLS) are mutually exclusive in
+# Django -- EMAIL_USE_SSL=True implies TLS is not also requested.
+EMAIL_USE_SSL = env("EMAIL_USE_SSL")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=not EMAIL_USE_SSL)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Census Workplan Tracker <noreply@example.org>")
 
 # --- Application-specific settings ---------------------------------------

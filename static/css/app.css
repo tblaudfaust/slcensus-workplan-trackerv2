@@ -1,12 +1,16 @@
 :root {
-  --ct-navy: #0b2e4f;
-  --ct-navy-dark: #081f38;
+  /* Primary brand palette: blue and white. --ct-navy/--ct-navy-dark are kept
+     as the variable names (used throughout this file) but now hold blue
+     tones rather than the earlier dark-navy scheme. */
+  --ct-navy: #1955a8;
+  --ct-navy-dark: #123f7d;
   --ct-accent: #1c7ed6;
+  --ct-blue-pale: #eaf2fd;
   --ct-green: #2f9e44;
   --ct-amber: #f08c00;
   --ct-red: #e03131;
   --ct-gray: #868e96;
-  --ct-bg: #f4f6f9;
+  --ct-bg: #f5f8fd;
 }
 
 body {
@@ -57,7 +61,7 @@ body {
 
 /* Large countdown card shown on the dashboard */
 .countdown-card {
-  background: linear-gradient(135deg, var(--ct-navy), var(--ct-green));
+  background: linear-gradient(135deg, var(--ct-navy), var(--ct-accent));
   border-radius: 0.75rem;
   color: #fff;
   padding: 1.5rem;
@@ -153,7 +157,7 @@ body {
 }
 
 .table-hover-row:hover {
-  background-color: #f1f5f9;
+  background-color: var(--ct-blue-pale);
 }
 
 .gantt-wrapper {
