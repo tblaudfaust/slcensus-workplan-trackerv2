@@ -85,9 +85,93 @@ def workstream_create(request, project_pk):
 
 @login_required
 def workstream_detail(request, pk):
-    workstream = get_object_or_404(Workstream.objects.select_related("project", "lead"), pk=pk)
-    activities = workstream.activities.select_related("responsible")
-    return render(request, "projects/workstream_detail.html", {"workstream": workstream, "activities": activities})
+    from apps.activities.models import Status
+
+    workstream = get_object_or_404(
+        Workstream.objects.select_related("project", "lead", "backup_lead"), pk=pk
+    )
+    activities = list(workstream.activities.select_related("responsible"))
+    total = len(activities)
+    completed = sum(1 for a in activities if a.status == Status.COMPLETED)
+    overdue = sum(1 for a in activities if a.is_overdue)
+    unassigned = sum(1 for a in activities if not a.has_owner)
+
+    return render(
+        request,
+        "projects/workstream_detail.html",
+        {
+            "workstream": workstream,
+            "activities": activities,
+            "stats": {
+                "total": total,
+                "completed": completed,
+                "overdue": overdue,
+                "unassigned": unassigned,
+                "percent": round((completed / total) * 100) if total else 0,
+            },
+            "can_alert": permissions.can_validate_completion(request.user, _WorkstreamActivityStandin(workstream)),
+        },
+    )
+
+
+class _WorkstreamActivityStandin:
+    """can_validate_completion is written to check permissions against an
+    Activity (it needs .project and .workstream_id); the alert button's
+    permission check is really "does this user have authority over this
+    workstream" with no specific activity involved, so this adapts a bare
+    Workstream to that same interface rather than duplicating the role
+    logic in a second function."""
+
+    def __init__(self, workstream):
+        self.project = workstream.project
+        self.workstream_id = workstream.id
+
+
+@login_required
+def workstream_send_alert(request, pk):
+    workstream = get_object_or_404(
+        Workstream.objects.select_related("project", "project__owner", "lead", "backup_lead"), pk=pk
+    )
+    if not permissions.can_validate_completion(request.user, _WorkstreamActivityStandin(workstream)):
+        messages.error(request, "You don't have permission to send an alert for this workstream.")
+        return redirect("projects:workstream_detail", workstream.pk)
+
+    if request.method == "POST":
+        from apps.notifications.emailing import eligible_recipients, send_notification
+        from apps.notifications.models import RuleType
+
+        from apps.activities.models import Status
+
+        activities = list(workstream.activities.all())
+        total = len(activities)
+        completed = sum(1 for a in activities if a.status == Status.COMPLETED)
+        overdue = sum(1 for a in activities if a.is_overdue)
+        percent = round((completed / total) * 100) if total else 0
+
+        recipients = eligible_recipients(workstream.lead, workstream.backup_lead, workstream.project.owner)
+        message = request.POST.get("message", "").strip()
+        sent = send_notification(
+            rule_type=RuleType.MANUAL_ALERT,
+            template="workstream_status_alert",
+            subject=f"[Census Tracker] Status alert: {workstream.name}",
+            context={
+                "recipient_name": "team",
+                "workstream": workstream,
+                "triggered_by": request.user.get_full_name() or request.user.username,
+                "total": total,
+                "completed": completed,
+                "overdue": overdue,
+                "percent": percent,
+                "message": message,
+            },
+            recipients=recipients,
+            workstream=workstream,
+        )
+        if sent:
+            messages.success(request, f"Alert sent to {sent} recipient(s).")
+        else:
+            messages.warning(request, "No recipients have a usable email on file (lead, backup lead, or project owner).")
+    return redirect("projects:workstream_detail", workstream.pk)
 
 
 @login_required

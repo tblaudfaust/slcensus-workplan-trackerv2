@@ -13,4 +13,5 @@ urlpatterns = [
     path("<int:project_pk>/workstreams/new/", views.workstream_create, name="workstream_create"),
     path("workstreams/<int:pk>/", views.workstream_detail, name="workstream_detail"),
     path("workstreams/<int:pk>/edit/", views.workstream_edit, name="workstream_edit"),
+    path("workstreams/<int:pk>/alert/", views.workstream_send_alert, name="workstream_alert"),
 ]

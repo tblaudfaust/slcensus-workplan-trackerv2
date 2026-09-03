@@ -16,4 +16,6 @@ def active_project(request):
         active = projects[0]
         request.session["active_project_id"] = active.id
 
-    return {"nav_projects": projects, "active_project": active}
+    nav_workstreams = list(active.workstreams.order_by("name")) if active else []
+
+    return {"nav_projects": projects, "active_project": active, "nav_workstreams": nav_workstreams}

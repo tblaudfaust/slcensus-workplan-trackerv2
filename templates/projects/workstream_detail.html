@@ -11,7 +11,34 @@
       &middot; Backup lead: {{ workstream.backup_lead|default:"Unassigned" }}
     </p>
   </div>
-  <a href="{% url 'projects:workstream_edit' workstream.pk %}" class="btn btn-outline-secondary btn-sm">Edit workstream</a>
+  <div class="d-flex gap-2">
+    {% if can_alert %}
+    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#alertForm">
+      <i class="bi bi-envelope"></i> Send alert
+    </button>
+    {% endif %}
+    <a href="{% url 'projects:workstream_edit' workstream.pk %}" class="btn btn-outline-secondary btn-sm">Edit workstream</a>
+  </div>
+</div>
+
+{% if can_alert %}
+<div class="collapse mb-3" id="alertForm">
+  <div class="section-card">
+    <form method="post" action="{% url 'projects:workstream_alert' workstream.pk %}">
+      {% csrf_token %}
+      <label class="form-label small">Send a status alert to the Lead, Backup Lead, and Project Owner. Optional message:</label>
+      <textarea name="message" class="form-control form-control-sm mb-2" rows="2" placeholder="e.g. Please prioritize the overdue items this week"></textarea>
+      <button type="submit" class="btn btn-sm btn-primary">Send alert now</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="kpi-card p-3"><div class="kpi-value">{{ stats.total }}</div><div class="kpi-label">Total Activities</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card p-3"><div class="kpi-value text-success">{{ stats.percent }}%</div><div class="kpi-label">Complete</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card p-3"><div class="kpi-value text-danger">{{ stats.overdue }}</div><div class="kpi-label">Overdue</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card p-3"><div class="kpi-value text-secondary">{{ stats.unassigned }}</div><div class="kpi-label">No Owner</div></div></div>
 </div>
 
 <div class="section-card">

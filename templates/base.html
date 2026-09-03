@@ -25,6 +25,18 @@
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:home' %}">Dashboard</a></li>
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'activities' %}active{% endif %}" href="{% url 'activities:list' %}">Activities</a></li>
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'projects' %}active{% endif %}" href="{% url 'projects:list' %}">Projects</a></li>
+        {% if nav_workstreams %}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle {% if request.resolver_match.url_name == 'workstream_detail' %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown">
+            Workstreams
+          </a>
+          <ul class="dropdown-menu">
+            {% for ws in nav_workstreams %}
+            <li><a class="dropdown-item" href="{% url 'projects:workstream_detail' ws.pk %}">{{ ws.name }}</a></li>
+            {% endfor %}
+          </ul>
+        </li>
+        {% endif %}
         {% if perms_can_upload %}
         <li class="nav-item"><a class="nav-link {% if request.resolver_match.app_name == 'uploads' %}active{% endif %}" href="{% url 'uploads:start' %}">Upload Workplan</a></li>
         {% endif %}
@@ -34,14 +46,6 @@
         {% endif %}
       </ul>
       <ul class="navbar-nav align-items-lg-center">
-        {% if active_project.census_day %}
-        <li class="nav-item me-2">
-          <span class="countdown-chip" data-countdown-target="{{ active_project.census_day|date:'Y-m-d' }}">
-            <i class="bi bi-hourglass-split"></i>
-            <span data-cd-days></span> <span data-cd-label></span>
-          </span>
-        </li>
-        {% endif %}
         {% if nav_projects|length > 1 %}
         <li class="nav-item dropdown me-2">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -53,8 +57,6 @@
             {% endfor %}
           </ul>
         </li>
-        {% elif active_project %}
-        <li class="nav-item me-2"><span class="nav-link"><i class="bi bi-diagram-3"></i> {{ active_project.name }}</span></li>
         {% endif %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">

@@ -13,6 +13,7 @@ class RuleType(models.TextChoices):
     WEEKLY_DIGEST = "WEEKLY_DIGEST", "Weekly summary digest"
     VALIDATION_REQUESTED = "VALIDATION_REQUESTED", "Activity ready for validation"
     COMPLETION_VALIDATED = "COMPLETION_VALIDATED", "Completion validated by workstream owner"
+    MANUAL_ALERT = "MANUAL_ALERT", "Manually triggered workstream alert"
 
 
 class NotificationRule(models.Model):
