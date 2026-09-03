@@ -33,9 +33,17 @@ class ProjectForm(BootstrapFormMixin, forms.ModelForm):
 class WorkstreamForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Workstream
-        fields = ["name", "description", "lead", "members"]
+        fields = ["name", "description", "lead", "backup_lead", "members"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["lead"].queryset = User.objects.filter(is_active=True)
+        self.fields["backup_lead"].queryset = User.objects.filter(is_active=True)
         self.fields["members"].queryset = User.objects.filter(is_active=True)
+
+    def clean(self):
+        cleaned = super().clean()
+        lead, backup = cleaned.get("lead"), cleaned.get("backup_lead")
+        if lead and backup and lead == backup:
+            self.add_error("backup_lead", "Backup lead must be a different person than the lead.")
+        return cleaned

@@ -9,7 +9,7 @@ from apps.activities.models import Activity, Status
 from apps.projects.models import Project, Workstream
 
 from .apps import _seed_default_rules
-from .emailing import already_sent_today, eligible_recipients, send_notification
+from .emailing import activity_owner_recipients, already_sent_today, eligible_recipients, send_notification
 from .models import NotificationLog, NotificationRule, RuleType
 
 
@@ -43,6 +43,36 @@ class EligibleRecipientsTests(TestCase):
         user = User.objects.create_user("a", password="x", email="a@example.org")
         result = eligible_recipients(user, user)
         self.assertEqual(result, [user])
+
+
+class ActivityOwnerRecipientsTests(TestCase):
+    def setUp(self):
+        owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER)
+        self.project = Project.objects.create(name="Census", owner=owner)
+        self.lead = User.objects.create_user("lead", password="x", role=Role.WORKSTREAM_OWNER)
+        self.backup = User.objects.create_user("backup", password="x", role=Role.WORKSTREAM_OWNER)
+        self.person = User.objects.create_user("person", password="x", role=Role.CONTRIBUTOR)
+        self.workstream = Workstream.objects.create(
+            project=self.project, name="GIS", lead=self.lead, backup_lead=self.backup
+        )
+
+    def test_prefers_matched_responsible_user(self):
+        activity = Activity.objects.create(
+            project=self.project, workstream=self.workstream, name="Task",
+            responsible=self.person, responsible_text="ignored role title",
+        )
+        self.assertEqual(activity_owner_recipients(activity), [self.person])
+
+    def test_falls_back_to_lead_and_backup_when_only_free_text(self):
+        activity = Activity.objects.create(
+            project=self.project, workstream=self.workstream, name="Task", responsible_text="GIS LEAD"
+        )
+        self.assertEqual(activity_owner_recipients(activity), [self.lead, self.backup])
+
+    def test_empty_when_no_owner_and_no_lead(self):
+        bare_ws = Workstream.objects.create(project=self.project, name="Publicity")
+        activity = Activity.objects.create(project=self.project, workstream=bare_ws, name="Task")
+        self.assertEqual(activity_owner_recipients(activity), [])
 
 
 class SendNotificationTests(TestCase):
@@ -135,3 +165,51 @@ class CheckDeadlinesCommandTests(TestCase):
             )
         call_command("check_deadlines")
         self.assertTrue(NotificationLog.objects.filter(rule_type=RuleType.WORKSTREAM_OVERDUE).exists())
+
+
+class ValidationNotificationTests(TestCase):
+    def setUp(self):
+        _seed_default_rules(sender=None)
+        self.owner = User.objects.create_user(
+            "owner", password="x", role=Role.PROJECT_OWNER, email="owner@example.org"
+        )
+        self.lead = User.objects.create_user(
+            "lead", password="pass12345", role=Role.WORKSTREAM_OWNER, email="lead@example.org"
+        )
+        self.project = Project.objects.create(name="Census", owner=self.owner)
+        self.ws = Workstream.objects.create(project=self.project, name="GIS", lead=self.lead)
+        self.activity = Activity.objects.create(
+            project=self.project, workstream=self.ws, name="Task", status=Status.PENDING_VALIDATION
+        )
+
+    def test_marking_pending_validation_notifies_the_lead(self):
+        from django.urls import reverse
+
+        admin = User.objects.create_user("admin", password="pass12345", role=Role.ADMIN)
+        self.activity.status = Status.ONGOING
+        self.activity.save()
+        self.client.login(username="admin", password="pass12345")
+        self.client.post(
+            reverse("activities:edit", args=[self.activity.pk]),
+            {
+                "workstream": self.ws.pk,
+                "name": self.activity.name,
+                "status": Status.PENDING_VALIDATION,
+                "progress_percent": 90,
+                "responsible_text": "",
+            },
+        )
+        self.assertTrue(
+            NotificationLog.objects.filter(rule_type=RuleType.VALIDATION_REQUESTED, recipient_email="lead@example.org").exists()
+        )
+
+    def test_validating_notifies_the_project_owner(self):
+        from django.urls import reverse
+
+        self.client.login(username="lead", password="pass12345")
+        self.client.post(reverse("activities:validate", args=[self.activity.pk]))
+        self.assertTrue(
+            NotificationLog.objects.filter(
+                rule_type=RuleType.COMPLETION_VALIDATED, recipient_email="owner@example.org"
+            ).exists()
+        )

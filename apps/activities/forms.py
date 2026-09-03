@@ -3,7 +3,7 @@ from django import forms
 from apps.accounts.models import User
 from apps.projects.models import Workstream
 
-from .models import Activity, Comment
+from .models import Activity, Comment, Status
 
 
 class BootstrapFormMixin:
@@ -50,10 +50,14 @@ class ActivityForm(BootstrapFormMixin, forms.ModelForm):
 
     def __init__(self, *args, project=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if project is not None:
+        # RestrictedActivityForm (used for Contributors) drops most of
+        # these fields entirely, so every touch here has to check the
+        # field actually exists on this form instance first.
+        if project is not None and "workstream" in self.fields:
             self.fields["workstream"].queryset = Workstream.objects.filter(project=project)
-        self.fields["responsible"].queryset = User.objects.filter(is_active=True)
-        self.fields["responsible"].required = False
+        if "responsible" in self.fields:
+            self.fields["responsible"].queryset = User.objects.filter(is_active=True)
+            self.fields["responsible"].required = False
 
     def clean(self):
         cleaned = super().clean()
@@ -68,10 +72,35 @@ class ActivityForm(BootstrapFormMixin, forms.ModelForm):
 
 class RestrictedActivityForm(ActivityForm):
     """Used by Contributors: they may update status/progress/remarks on an
-    activity they own, but not reassign it or rewrite its schedule."""
+    activity they own, but not reassign it or rewrite its schedule. They
+    also cannot mark an activity Completed directly -- Pending Validation
+    is as far as they can push it; a Workstream Owner (or above) signs off
+    via the dedicated validate action."""
 
     class Meta(ActivityForm.Meta):
         fields = ["status", "progress_percent", "remarks"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        choices = Status.contributor_choices()
+        # If the activity is already Completed (e.g. validated earlier),
+        # keep that as a selectable option so a Contributor can still save
+        # other field changes without being forced to un-complete it --
+        # they just can't be the one to *set* it to Completed (enforced
+        # below, since clean_status only runs when the value changes).
+        if self.instance.pk and self.instance.status == Status.COMPLETED:
+            choices = choices + [(Status.COMPLETED, Status.COMPLETED.label)]
+        self.fields["status"].choices = choices
+
+    def clean_status(self):
+        status = self.cleaned_data["status"]
+        was_completed = self.instance.pk and self.instance.status == Status.COMPLETED
+        if status == Status.COMPLETED and not was_completed:
+            raise forms.ValidationError(
+                "Contributors can't mark an activity Completed directly -- set it to "
+                "Pending Validation and your Workstream Owner will confirm it."
+            )
+        return status
 
 
 class CommentForm(forms.ModelForm):

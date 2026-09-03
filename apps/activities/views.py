@@ -8,7 +8,7 @@ from apps.accounts import permissions
 from apps.projects.models import Project, Workstream
 
 from .forms import ActivityFilterForm, ActivityForm, CommentForm, RestrictedActivityForm
-from .models import Activity
+from .models import Activity, Comment, Status
 from .services import record_changes, snapshot
 from .signals import activity_changed, activity_created
 
@@ -109,6 +109,7 @@ def activity_detail(request, pk):
             "activity": activity,
             "can_edit": can_edit,
             "can_delete": permissions.can_delete_activity(request.user, activity),
+            "can_validate": permissions.can_validate_completion(request.user, activity),
             "comment_form": comment_form,
             "history": activity.history.select_related("changed_by")[:50],
             "comments": activity.comments.select_related("user"),
@@ -183,6 +184,90 @@ def activity_edit(request, pk):
         request,
         "activities/activity_form.html",
         {"form": form, "is_create": False, "activity": activity, "project": activity.project},
+    )
+
+
+@login_required
+def activity_validate(request, pk):
+    activity = get_object_or_404(Activity.objects.select_related("project", "workstream"), pk=pk)
+    if not permissions.can_validate_completion(request.user, activity):
+        messages.error(request, "Only the workstream's lead/backup lead (or above) can validate a completion.")
+        return redirect("activities:detail", activity.pk)
+    if activity.status != Status.PENDING_VALIDATION:
+        messages.error(request, "Only activities marked Pending Validation can be validated.")
+        return redirect("activities:detail", activity.pk)
+
+    if request.method == "POST":
+        before = snapshot(activity)
+        activity.status = Status.COMPLETED
+        activity.progress_percent = 100
+        activity.validated_by = request.user
+        activity.validated_at = timezone.now()
+        activity.save()
+        changed_fields = record_changes(activity, before, changed_by=request.user, source="MANUAL")
+        if changed_fields:
+            activity_changed.send(
+                sender=Activity,
+                activity=activity,
+                changed_fields=changed_fields,
+                changed_by=request.user,
+                source="MANUAL",
+            )
+        _notify_completion_validated(activity)
+        messages.success(request, f"'{activity.name}' validated and marked Completed.")
+    return redirect("activities:detail", activity.pk)
+
+
+@login_required
+def activity_send_back(request, pk):
+    activity = get_object_or_404(Activity.objects.select_related("project", "workstream"), pk=pk)
+    if not permissions.can_validate_completion(request.user, activity):
+        messages.error(request, "Only the workstream's lead/backup lead (or above) can send this back.")
+        return redirect("activities:detail", activity.pk)
+    if activity.status != Status.PENDING_VALIDATION:
+        messages.error(request, "Only activities marked Pending Validation can be sent back.")
+        return redirect("activities:detail", activity.pk)
+
+    if request.method == "POST":
+        before = snapshot(activity)
+        activity.status = Status.ONGOING
+        activity.save()
+        changed_fields = record_changes(activity, before, changed_by=request.user, source="MANUAL")
+        if changed_fields:
+            activity_changed.send(
+                sender=Activity,
+                activity=activity,
+                changed_fields=changed_fields,
+                changed_by=request.user,
+                source="MANUAL",
+            )
+        reason = request.POST.get("reason", "").strip()
+        if reason:
+            Comment.objects.create(activity=activity, user=request.user, body=f"Sent back for more work: {reason}")
+        messages.success(request, f"'{activity.name}' sent back to Ongoing.")
+    return redirect("activities:detail", activity.pk)
+
+
+def _notify_completion_validated(activity):
+    from apps.notifications.emailing import eligible_recipients, rule_enabled, send_notification
+    from apps.notifications.models import RuleType
+
+    if not rule_enabled(RuleType.COMPLETION_VALIDATED):
+        return
+    owner = activity.project.owner
+    recipients = eligible_recipients(owner)
+    send_notification(
+        rule_type=RuleType.COMPLETION_VALIDATED,
+        template="completion_validated",
+        subject=f"[Census Tracker] Completion validated: {activity.name}",
+        context={
+            "activity": activity,
+            "recipient_name": owner.get_full_name() or owner.username,
+            "validated_by": activity.validated_by,
+            "validated_at": activity.validated_at,
+        },
+        recipients=recipients,
+        activity=activity,
     )
 
 

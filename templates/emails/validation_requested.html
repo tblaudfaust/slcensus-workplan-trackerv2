@@ -1,0 +1,7 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p>An activity in your workstream has been marked <strong>Pending Validation</strong> and is ready for your review:</p>
+{% include "emails/_activity_card.html" %}
+<p>Please confirm the work is complete and mark it Completed, or send it back with a comment if it isn't ready yet.</p>
+{% endblock %}

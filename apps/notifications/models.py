@@ -11,6 +11,8 @@ class RuleType(models.TextChoices):
     MILESTONE_COMPLETED = "MILESTONE_COMPLETED", "Major milestone completed"
     WORKSTREAM_OVERDUE = "WORKSTREAM_OVERDUE", "Workstream has several overdue activities"
     WEEKLY_DIGEST = "WEEKLY_DIGEST", "Weekly summary digest"
+    VALIDATION_REQUESTED = "VALIDATION_REQUESTED", "Activity ready for validation"
+    COMPLETION_VALIDATED = "COMPLETION_VALIDATED", "Completion validated by workstream owner"
 
 
 class NotificationRule(models.Model):

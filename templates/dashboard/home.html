@@ -6,6 +6,7 @@
 <style>
   .gantt .bar-wrapper.gantt-completed .bar { fill: #2f9e44; }
   .gantt .bar-wrapper.gantt-ongoing .bar { fill: #1c7ed6; }
+  .gantt .bar-wrapper.gantt-pending_validation .bar { fill: #5f3dc4; }
   .gantt .bar-wrapper.gantt-not_started .bar { fill: #adb5bd; }
   .gantt .bar-wrapper.gantt-delayed .bar { fill: #e03131; }
   .gantt .bar-wrapper.gantt-at_risk .bar { fill: #f08c00; }
@@ -230,7 +231,7 @@ fetch(chartDataUrl).then(r => r.json()).then(data => {
       labels: data.status_labels,
       datasets: [{
         data: data.status_values,
-        backgroundColor: ['#adb5bd', '#1c7ed6', '#2f9e44', '#e03131', '#f08c00'],
+        backgroundColor: ['#adb5bd', '#1c7ed6', '#5f3dc4', '#2f9e44', '#e03131', '#f08c00'],
       }],
     },
     options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },

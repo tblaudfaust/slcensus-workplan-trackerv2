@@ -18,6 +18,39 @@
   </div>
 </div>
 
+{% if activity.status == "PENDING_VALIDATION" %}
+  {% if can_validate %}
+  <div class="alert d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:#e5dbff;border-color:#d0bfff;">
+    <div><i class="bi bi-hourglass-split"></i> This activity is pending validation. Confirm the work is complete, or send it back.</div>
+    <div class="d-flex gap-2">
+      <form method="post" action="{% url 'activities:validate' activity.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-check-lg"></i> Validate &amp; Complete</button>
+      </form>
+      <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#sendBackForm">Send back</button>
+    </div>
+  </div>
+  <div class="collapse mb-3" id="sendBackForm">
+    <div class="section-card">
+      <form method="post" action="{% url 'activities:send_back' activity.pk %}">
+        {% csrf_token %}
+        <label class="form-label small">Reason (optional, added as a comment)</label>
+        <textarea name="reason" class="form-control form-control-sm mb-2" rows="2"></textarea>
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Send back to Ongoing</button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert" style="background:#e5dbff;border-color:#d0bfff;">
+    <i class="bi bi-hourglass-split"></i> Pending validation by the workstream lead/backup lead.
+  </div>
+  {% endif %}
+{% elif activity.validated_by %}
+  <div class="alert alert-success">
+    <i class="bi bi-patch-check"></i> Validated by {{ activity.validated_by }} on {{ activity.validated_at|date:"d M Y H:i" }}.
+  </div>
+{% endif %}
+
 <div class="row g-3">
   <div class="col-lg-8">
     <div class="section-card mb-3">

@@ -46,8 +46,14 @@ def can_manage_project(user, project):
 
 
 def owned_workstream_ids(user):
-    return set(user.led_workstreams.values_list("id", flat=True)) | set(
-        user.workstreams.values_list("id", flat=True)
+    """Workstreams this user leads, backs up as lead, or is a plain member
+    of. The backup lead is deliberately treated the same as the lead for
+    edit/validate rights -- they exist to stand in, not to have lesser
+    access."""
+    return (
+        set(user.led_workstreams.values_list("id", flat=True))
+        | set(user.backup_led_workstreams.values_list("id", flat=True))
+        | set(user.workstreams.values_list("id", flat=True))
     )
 
 
@@ -65,6 +71,22 @@ def can_edit_activity(user, activity):
         return activity.workstream_id in owned_workstream_ids(user)
     if is_contributor(user):
         return activity.responsible_id == user.id
+    return False
+
+
+def can_validate_completion(user, activity):
+    """Only the people accountable for a workstream's delivery -- its Lead
+    or Backup Lead -- or Admin/Project Owner above them, can promote a
+    Pending Validation activity to Completed. A Contributor can flag work
+    as ready but cannot sign off on their own work."""
+    if not user.is_authenticated:
+        return False
+    if is_admin(user):
+        return True
+    if is_project_owner(user):
+        return activity.project.owner_id == user.id
+    if is_workstream_owner(user):
+        return activity.workstream_id in owned_workstream_ids(user)
     return False
 
 

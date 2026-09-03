@@ -31,6 +31,18 @@ def eligible_recipients(*users):
     return result
 
 
+def activity_owner_recipients(activity):
+    """Who stands in for "the responsible owner" of an activity, for
+    alerting purposes. Prefers the matched system-user `responsible`; a
+    great many real-world rows only carry a role title in
+    `responsible_text` ("GIS LEAD", "CCIT Team Lead") with no linked
+    account, so falls back to that workstream's Lead + Backup Lead -- the
+    people actually accountable for it -- rather than sending nothing."""
+    if activity.responsible_id:
+        return [activity.responsible]
+    return [u for u in (activity.workstream.lead, activity.workstream.backup_lead) if u]
+
+
 def send_notification(*, rule_type, template, subject, context, recipients, activity=None, workstream=None):
     """Renders templates/emails/{template}.html, sends to each recipient
     individually (so failures/opt-outs don't block the batch), and logs

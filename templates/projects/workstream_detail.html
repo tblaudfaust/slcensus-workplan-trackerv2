@@ -6,7 +6,10 @@
   <div>
     <p class="text-muted mb-0 small"><a href="{% url 'projects:detail' workstream.project.pk %}">{{ workstream.project.name }}</a></p>
     <h4 class="mb-0">{{ workstream.name }}</h4>
-    <p class="text-muted mb-0">Lead: {{ workstream.lead|default:"Unassigned" }}</p>
+    <p class="text-muted mb-0">
+      Lead: {{ workstream.lead|default:"Unassigned" }}
+      &middot; Backup lead: {{ workstream.backup_lead|default:"Unassigned" }}
+    </p>
   </div>
   <a href="{% url 'projects:workstream_edit' workstream.pk %}" class="btn btn-outline-secondary btn-sm">Edit workstream</a>
 </div>

@@ -1,0 +1,7 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p style="color:#2b8a3e;font-weight:bold;">An activity has been validated and marked Completed:</p>
+{% include "emails/_activity_card.html" %}
+<p>Validated by {{ validated_by }} on {{ validated_at|date:"d M Y H:i" }}.</p>
+{% endblock %}

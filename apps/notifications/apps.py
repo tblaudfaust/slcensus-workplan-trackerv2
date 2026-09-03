@@ -29,14 +29,13 @@ class NotificationsConfig(AppConfig):
 
 
 def _seed_default_rules(sender, **kwargs):
-    """Creates one enabled row per non-deadline rule type, plus a deadline
-    reminder row for each of REMINDER_DAYS_DEFAULT, the first time
-    migrations run. Leaves everything alone on subsequent migrates so an
-    admin's later edits in the Notification Settings page always stick."""
+    """Ensures one enabled row exists per non-deadline rule type, plus a
+    deadline reminder row for each of REMINDER_DAYS_DEFAULT. Runs on every
+    migrate, but each row is created with get_or_create keyed on
+    (rule_type, days_before) -- so it only ever fills in rows that don't
+    exist yet (e.g. a rule type added in a later release) and never resets
+    an admin's enabled/disabled choice on an existing row."""
     from .models import NotificationRule, RuleType
-
-    if NotificationRule.objects.exists():
-        return
 
     for days in settings.REMINDER_DAYS_DEFAULT:
         NotificationRule.objects.get_or_create(
@@ -56,5 +55,7 @@ def _seed_default_rules(sender, **kwargs):
         RuleType.TASK_ASSIGNED,
         RuleType.MILESTONE_COMPLETED,
         RuleType.WEEKLY_DIGEST,
+        RuleType.VALIDATION_REQUESTED,
+        RuleType.COMPLETION_VALIDATED,
     ):
         NotificationRule.objects.get_or_create(rule_type=rule_type, days_before=None, defaults={"enabled": True})

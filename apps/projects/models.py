@@ -50,6 +50,14 @@ class Workstream(models.Model):
         blank=True,
         related_name="led_workstreams",
     )
+    backup_lead = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="backup_led_workstreams",
+        help_text="Stands in for the Lead -- included on workstream alerts and used as a fallback recipient when an activity has no individually-assigned owner.",
+    )
     members = models.ManyToManyField(
         settings.AUTH_USER_MODEL, related_name="workstreams", blank=True
     )

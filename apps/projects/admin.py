@@ -6,7 +6,7 @@ from .models import Project, Workstream
 class WorkstreamInline(admin.TabularInline):
     model = Workstream
     extra = 0
-    fields = ("name", "lead")
+    fields = ("name", "lead", "backup_lead")
 
 
 @admin.register(Project)
@@ -19,7 +19,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Workstream)
 class WorkstreamAdmin(admin.ModelAdmin):
-    list_display = ("name", "project", "lead")
+    list_display = ("name", "project", "lead", "backup_lead")
     list_filter = ("project",)
     search_fields = ("name",)
     filter_horizontal = ("members",)

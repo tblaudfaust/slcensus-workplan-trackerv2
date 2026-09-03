@@ -138,10 +138,18 @@ This starts the app (via Gunicorn) and a PostgreSQL database, running migrations
 | Role | Can do |
 |---|---|
 | Administrator | Everything: manage users, projects, notification settings, all activities |
-| Project Owner | Manage their project's workstreams and activities; receives the weekly digest |
-| Workstream Owner | Edit activities within their assigned workstream(s) |
-| Contributor | Update status/progress/comments on activities they're responsible for |
+| Project Owner | Manage their project's workstreams and activities; receives the weekly digest and completion-validated alerts |
+| Workstream Owner | Edit activities within their assigned workstream(s); validates (or sends back) activities a Contributor has marked Pending Validation |
+| Contributor | Update status/progress/comments on activities they're responsible for; can mark work Pending Validation but not Completed directly |
 | Viewer | Read-only access everywhere |
+
+Each Workstream also has an optional **Backup Lead** (Projects → a workstream → Edit workstream), who has the same edit/validate rights as the Lead and is included on workstream-level alerts -- useful for covering absences. When an activity's Responsible field isn't a matched system account (e.g. it only carries a role title like "GIS LEAD" from an uploaded workbook), owner-level notifications (status changes, at-risk, validation requests) fall back to that workstream's Lead + Backup Lead so alerts still reach someone accountable.
+
+### Completion validation workflow
+
+1. A Contributor sets an activity's status to **Pending Validation** once they believe the work is done (they cannot set it to Completed directly).
+2. The workstream's Lead and Backup Lead are emailed a validation request.
+3. From the activity page, the Lead/Backup Lead (or Admin/Project Owner) either **Validate & Complete** it (records who validated it and when, and emails the Project Owner) or **Send it back** to Ongoing with an optional comment explaining why.
 
 ## Roadmap
 
