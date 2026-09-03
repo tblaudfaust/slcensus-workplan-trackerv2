@@ -136,14 +136,42 @@ This is the quickest way to get the app reachable on the public internet with a 
 - The workbook upload wizard's preview step writes a temporary file to local disk between "upload" and "confirm" — on the free plan the container's filesystem isn't a persistent disk, so this works in normal single-instance operation but isn't bulletproof against a container restart landing exactly between those two requests. Not a concern for the deadline/status features, just something to know if an upload confirmation ever fails with a missing-file error — retry the upload.
 - Upgrading to Render's paid Starter plan (~$7/mo at time of writing) removes the sleep behavior and is a reasonable next step once this is genuinely in daily use.
 
-### Docker
+### Docker Compose on a VPS (with automatic HTTPS)
+
+`docker-compose.yml` runs three containers: `db` (PostgreSQL), `web` (the Django app, via Gunicorn), and `caddy` (a reverse proxy that automatically requests and renews a free HTTPS certificate from Let's Encrypt for your domain). Only Caddy is exposed to the internet, on ports 80/443; `web` and `db` are only reachable from other containers on the same compose network.
+
+**Before starting**, point an A record for your domain at the server's public IP — Caddy needs this to be already resolving before it can request a certificate.
 
 ```bash
-cp .env.example .env   # edit with real production values
+git clone https://github.com/tblaudfaust/slcensus-workplan-trackerv2.git
+cd slcensus-workplan-trackerv2
+cp .env.example .env
+nano .env   # fill in SECRET_KEY, POSTGRES_*, SITE_DOMAIN, EMAIL_*, SITE_URL, ALLOWED_HOSTS, CSRF_TRUSTED_ORIGINS -- see table below
 docker compose up -d --build
 ```
 
-This starts the app (via Gunicorn) and a PostgreSQL database, running migrations automatically on startup. Set real `POSTGRES_*` values in `.env` before deploying.
+| Variable | Set it to |
+|---|---|
+| `SECRET_KEY` | a long random string (generate with `python3 -c "import secrets; print(secrets.token_urlsafe(50))"`, or any password generator) |
+| `DEBUG` | `False` |
+| `ALLOWED_HOSTS` | your domain, e.g. `stats-project.statistics.sl` |
+| `CSRF_TRUSTED_ORIGINS` | `https://` + your domain, e.g. `https://stats-project.statistics.sl` |
+| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | pick your own values (used only between the `web` and `db` containers) |
+| `SITE_DOMAIN` | same domain, e.g. `stats-project.statistics.sl` (this one is read by Caddy, not Django) |
+| `SITE_URL` | `https://` + your domain |
+| `EMAIL_*` | your SMTP credentials, as in the reference table above |
+| `SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` | `True` (Caddy is doing real TLS termination here, so these are safe and recommended) |
+| `SCHEDULER_ENABLED` | `True` (a VPS runs continuously, unlike a free PaaS web service that sleeps, so the in-process scheduler is fine here) |
+
+Once it's up (`docker compose ps` to check all three containers are healthy), create your first login:
+
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+Visit `https://<your domain>`. If the certificate doesn't come up immediately, check `docker compose logs caddy` -- the most common cause is the DNS A record not having propagated yet, or ports 80/443 being blocked by a firewall in front of the VPS.
+
+**To deploy an update later:** `git pull && docker compose up -d --build` (migrations run automatically on container start).
 
 ### Manual
 

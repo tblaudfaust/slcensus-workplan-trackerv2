@@ -24,11 +24,34 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    # Not published directly to the host -- only Caddy accepts public
+    # traffic (on 80/443) and proxies to this container over the internal
+    # compose network. Uncomment `ports` below only for troubleshooting
+    # (e.g. to hit http://<vps-ip>:8000 directly, bypassing Caddy/TLS).
+    expose:
+      - "8000"
+    # ports:
+    #   - "8000:8000"
     volumes:
       - media_data:/app/media
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-stats-project.statistics.sl}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
 
 volumes:
   postgres_data:
   media_data:
+  caddy_data:
+  caddy_config:

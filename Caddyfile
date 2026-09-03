@@ -1,0 +1,14 @@
+{$SITE_DOMAIN} {
+	# Caddy automatically requests and renews a free Let's Encrypt
+	# certificate for this domain the first time it starts, as long as
+	# DNS already points here and ports 80/443 are reachable from the
+	# internet -- no manual certbot/cron renewal setup needed.
+	reverse_proxy web:8000
+
+	encode gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
