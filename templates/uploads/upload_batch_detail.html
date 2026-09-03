@@ -3,10 +3,10 @@
 {% block content %}
 <h4 class="mb-3"><i class="bi bi-file-earmark-spreadsheet"></i> {{ batch.file_name }}</h4>
 <div class="row g-3 mb-3">
-  <div class="col-md-3"><div class="kpi-card kpi-accent-blue p-3"><div class="kpi-value">{{ batch.rows_total }}</div><div class="kpi-label">Rows processed</div></div></div>
-  <div class="col-md-3"><div class="kpi-card kpi-accent-green p-3"><div class="kpi-value text-success">{{ batch.rows_created }}</div><div class="kpi-label">Created</div></div></div>
-  <div class="col-md-3"><div class="kpi-card kpi-accent-blue p-3"><div class="kpi-value text-primary">{{ batch.rows_updated }}</div><div class="kpi-label">Updated</div></div></div>
-  <div class="col-md-3"><div class="kpi-card kpi-accent-red p-3"><div class="kpi-value text-danger">{{ batch.rows_skipped }}</div><div class="kpi-label">Skipped</div></div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-accent-blue p-3"><div class="kpi-icon"><i class="bi bi-file-earmark-spreadsheet"></i></div><div><div class="kpi-value">{{ batch.rows_total }}</div><div class="kpi-label">Rows processed</div></div></div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-accent-green p-3"><div class="kpi-icon"><i class="bi bi-plus-circle"></i></div><div><div class="kpi-value text-success">{{ batch.rows_created }}</div><div class="kpi-label">Created</div></div></div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-accent-blue p-3"><div class="kpi-icon"><i class="bi bi-arrow-repeat"></i></div><div><div class="kpi-value text-primary">{{ batch.rows_updated }}</div><div class="kpi-label">Updated</div></div></div></div>
+  <div class="col-md-3"><div class="kpi-card kpi-accent-red p-3"><div class="kpi-icon"><i class="bi bi-dash-circle"></i></div><div><div class="kpi-value text-danger">{{ batch.rows_skipped }}</div><div class="kpi-label">Skipped</div></div></div></div>
 </div>
 <div class="section-card mb-3">
   <dl class="row mb-0 small">

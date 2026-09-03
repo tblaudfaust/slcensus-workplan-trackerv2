@@ -35,10 +35,10 @@
 {% endif %}
 
 <div class="row g-3 mb-3">
-  <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-blue p-3"><div class="kpi-value">{{ stats.total }}</div><div class="kpi-label">Total Activities</div></div></div>
-  <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-green p-3"><div class="kpi-value text-success">{{ stats.percent }}%</div><div class="kpi-label">Complete</div></div></div>
-  <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-red p-3"><div class="kpi-value text-danger">{{ stats.overdue }}</div><div class="kpi-label">Overdue</div></div></div>
-  <div class="col-6 col-md-3"><div class="kpi-card p-3"><div class="kpi-value text-secondary">{{ stats.unassigned }}</div><div class="kpi-label">No Owner</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-blue p-3"><div class="kpi-icon"><i class="bi bi-clipboard2-check"></i></div><div><div class="kpi-value">{{ stats.total }}</div><div class="kpi-label">Total Activities</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-green p-3"><div class="kpi-icon"><i class="bi bi-check-circle"></i></div><div><div class="kpi-value text-success">{{ stats.percent }}%</div><div class="kpi-label">Complete</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-red p-3"><div class="kpi-icon"><i class="bi bi-alarm"></i></div><div><div class="kpi-value text-danger">{{ stats.overdue }}</div><div class="kpi-label">Overdue</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-purple p-3"><div class="kpi-icon"><i class="bi bi-person-x"></i></div><div><div class="kpi-value text-secondary">{{ stats.unassigned }}</div><div class="kpi-label">No Owner</div></div></div></div>
 </div>
 
 <div class="section-card">

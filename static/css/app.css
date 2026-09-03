@@ -158,6 +158,109 @@ a:hover {
 }
 
 /* ---------------------------------------------------------------------
+   Sidebar
+------------------------------------------------------------------------ */
+
+.app-shell {
+  display: flex;
+  align-items: flex-start;
+}
+
+.app-sidebar {
+  width: 240px;
+  flex: 0 0 240px;
+  min-height: calc(100vh - 4rem);
+  background: #fff;
+  border-right: 1px solid var(--ct-border);
+  padding: 1.25rem 0.9rem;
+  flex-direction: column;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.sidebar-group-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ct-gray);
+  margin: 1.1rem 0.6rem 0.35rem;
+}
+
+.sidebar-group-label:first-child {
+  margin-top: 0.25rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.5rem;
+  color: var(--ct-ink);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.sidebar-link i {
+  font-size: 1rem;
+  width: 1.1rem;
+  text-align: center;
+  color: var(--ct-gray);
+}
+
+.sidebar-link:hover {
+  background: var(--ct-blue-pale);
+  color: var(--ct-navy);
+}
+
+.sidebar-link.active {
+  background: var(--ct-navy);
+  color: #fff;
+}
+
+.sidebar-link.active i {
+  color: #fff;
+}
+
+.sidebar-footer {
+  margin-top: 1.5rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.sidebar-illustration {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sidebar-footer-text {
+  background: var(--ct-navy);
+  color: #eaf2fd;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.app-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------
    Countdown
 ------------------------------------------------------------------------ */
 
@@ -242,8 +345,10 @@ a:hover {
 }
 
 .kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
   border: 1px solid var(--ct-border);
-  border-top: 3px solid var(--ct-gray);
   border-radius: 0.9rem;
   box-shadow: var(--shadow-sm);
   height: 100%;
@@ -251,11 +356,24 @@ a:hover {
   background: #fff;
 }
 
-.kpi-card.kpi-accent-blue { border-top-color: var(--ct-accent); }
-.kpi-card.kpi-accent-green { border-top-color: var(--ct-green); }
-.kpi-card.kpi-accent-amber { border-top-color: var(--ct-amber); }
-.kpi-card.kpi-accent-red { border-top-color: var(--ct-red); }
-.kpi-card.kpi-accent-purple { border-top-color: var(--ct-purple); }
+.kpi-icon {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  background: var(--ct-gray);
+  color: #fff;
+}
+
+.kpi-card.kpi-accent-blue .kpi-icon { background: var(--ct-accent); }
+.kpi-card.kpi-accent-green .kpi-icon { background: var(--ct-green); }
+.kpi-card.kpi-accent-amber .kpi-icon { background: var(--ct-amber); }
+.kpi-card.kpi-accent-red .kpi-icon { background: var(--ct-red); }
+.kpi-card.kpi-accent-purple .kpi-icon { background: var(--ct-purple); }
 
 .kpi-card-link {
   display: block;
@@ -275,7 +393,7 @@ a:hover {
 }
 
 .kpi-card .kpi-value {
-  font-size: 2.1rem;
+  font-size: 1.7rem;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.02em;

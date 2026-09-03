@@ -8,7 +8,7 @@ from apps.accounts import permissions
 from apps.projects.models import Project, Workstream
 
 from .forms import ActivityFilterForm, ActivityForm, CommentForm, RestrictedActivityForm
-from .models import Activity, Comment, Status
+from .models import Activity, ActivityHistory, Comment, Status
 from .services import record_changes, snapshot
 from .signals import activity_changed, activity_created
 
@@ -283,3 +283,27 @@ def activity_delete(request, pk):
         messages.success(request, f"Activity '{name}' deleted.")
         return redirect("activities:list")
     return render(request, "activities/activity_confirm_delete.html", {"activity": activity})
+
+
+@login_required
+def audit_log(request):
+    """A project-wide feed of every change recorded across all activities
+    -- the per-activity history section shows the same data scoped to one
+    activity; this is the oversight view across everything at once, so
+    it's restricted to the roles accountable for the whole project."""
+    project = _active_project(request)
+    if project is None:
+        messages.info(request, "Create a project to get started.")
+        return redirect("projects:list")
+    if not (permissions.is_admin(request.user) or permissions.is_project_owner(request.user)):
+        messages.error(request, "You don't have permission to view the audit log.")
+        return redirect("dashboard:home")
+
+    history = (
+        ActivityHistory.objects.filter(activity__project=project)
+        .select_related("activity", "activity__workstream", "changed_by")
+        .order_by("-changed_at")
+    )
+    paginator = Paginator(history, 50)
+    page = paginator.get_page(request.GET.get("page"))
+    return render(request, "activities/audit_log.html", {"project": project, "page": page})

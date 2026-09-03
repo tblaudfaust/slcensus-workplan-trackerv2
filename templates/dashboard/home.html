@@ -79,58 +79,58 @@
 <div class="row g-3 mb-3">
   <div class="col-6 col-md-3 col-lg-2">
     <div class="kpi-card kpi-accent-blue p-3">
-      <div class="kpi-value">{{ kpis.total }}</div>
-      <div class="kpi-label">Total Activities</div>
+      <div class="kpi-icon"><i class="bi bi-clipboard2-check"></i></div>
+      <div><div class="kpi-value">{{ kpis.total }}</div><div class="kpi-label">Total Activities</div></div>
     </div>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
     <div class="kpi-card kpi-accent-green p-3">
-      <div class="kpi-value text-success">{{ kpis.status_counts.COMPLETED }}</div>
-      <div class="kpi-label">Completed</div>
+      <div class="kpi-icon"><i class="bi bi-check-circle"></i></div>
+      <div><div class="kpi-value text-success">{{ kpis.status_counts.COMPLETED }}</div><div class="kpi-label">Completed</div></div>
     </div>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
     <div class="kpi-card kpi-accent-blue p-3">
-      <div class="kpi-value text-primary">{{ kpis.status_counts.ONGOING }}</div>
-      <div class="kpi-label">Ongoing</div>
+      <div class="kpi-icon"><i class="bi bi-play-circle"></i></div>
+      <div><div class="kpi-value text-primary">{{ kpis.status_counts.ONGOING }}</div><div class="kpi-label">Ongoing</div></div>
     </div>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
     <a href="{{ at_risk_url }}" class="kpi-card-link" title="View at-risk activities">
       <div class="kpi-card kpi-accent-amber p-3">
-        <div class="kpi-value" style="color:var(--ct-amber);">{{ kpis.status_counts.AT_RISK }}</div>
-        <div class="kpi-label">At Risk <i class="bi bi-box-arrow-up-right small"></i></div>
+        <div class="kpi-icon"><i class="bi bi-exclamation-triangle"></i></div>
+        <div><div class="kpi-value" style="color:var(--ct-amber);">{{ kpis.status_counts.AT_RISK }}</div><div class="kpi-label">At Risk <i class="bi bi-box-arrow-up-right small"></i></div></div>
       </div>
     </a>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
     <a href="{{ overdue_url }}" class="kpi-card-link" title="View overdue activities">
       <div class="kpi-card kpi-accent-red p-3">
-        <div class="kpi-value text-danger">{{ kpis.overdue }}</div>
-        <div class="kpi-label">Overdue <i class="bi bi-box-arrow-up-right small"></i></div>
+        <div class="kpi-icon"><i class="bi bi-alarm"></i></div>
+        <div><div class="kpi-value text-danger">{{ kpis.overdue }}</div><div class="kpi-label">Overdue <i class="bi bi-box-arrow-up-right small"></i></div></div>
       </div>
     </a>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
-    <div class="kpi-card p-3">
-      <div class="kpi-value text-secondary">{{ kpis.unassigned }}</div>
-      <div class="kpi-label">No Owner</div>
+    <div class="kpi-card kpi-accent-purple p-3">
+      <div class="kpi-icon"><i class="bi bi-person-x"></i></div>
+      <div><div class="kpi-value text-secondary">{{ kpis.unassigned }}</div><div class="kpi-label">No Owner</div></div>
     </div>
   </div>
 </div>
 
 <div class="row g-3 mb-3">
   <div class="col-6 col-md-3">
-    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_today }}</div><div class="kpi-label">Due Today</div></div>
+    <div class="kpi-card p-3"><div class="kpi-icon"><i class="bi bi-calendar-day"></i></div><div><div class="kpi-value">{{ kpis.due_today }}</div><div class="kpi-label">Due Today</div></div></div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_this_week }}</div><div class="kpi-label">Due This Week</div></div>
+    <div class="kpi-card p-3"><div class="kpi-icon"><i class="bi bi-calendar-week"></i></div><div><div class="kpi-value">{{ kpis.due_this_week }}</div><div class="kpi-label">Due This Week</div></div></div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_14 }}</div><div class="kpi-label">Due in 14 Days</div></div>
+    <div class="kpi-card p-3"><div class="kpi-icon"><i class="bi bi-calendar-range"></i></div><div><div class="kpi-value">{{ kpis.due_14 }}</div><div class="kpi-label">Due in 14 Days</div></div></div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="kpi-card p-3"><div class="kpi-value">{{ kpis.due_30 }}</div><div class="kpi-label">Due in 30 Days</div></div>
+    <div class="kpi-card p-3"><div class="kpi-icon"><i class="bi bi-calendar-month"></i></div><div><div class="kpi-value">{{ kpis.due_30 }}</div><div class="kpi-label">Due in 30 Days</div></div></div>
   </div>
 </div>
 

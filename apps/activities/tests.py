@@ -206,3 +206,28 @@ class ValidationWorkflowTests(TestCase):
         self.activity.refresh_from_db()
         self.assertEqual(self.activity.status, Status.ONGOING)
         self.assertTrue(self.activity.comments.filter(body__icontains="missing sign-off").exists())
+
+
+class AuditLogTests(TestCase):
+    def setUp(self):
+        self.project, self.workstream = make_project()
+        self.lead = User.objects.create_user("lead", password="pass12345", role=Role.WORKSTREAM_OWNER)
+        self.owner = self.project.owner
+        self.activity = Activity.objects.create(
+            project=self.project, workstream=self.workstream, name="Task", status=Status.NOT_STARTED
+        )
+        before = snapshot(self.activity)
+        self.activity.status = Status.ONGOING
+        self.activity.save()
+        record_changes(self.activity, before)
+
+    def test_project_owner_can_view_audit_log(self):
+        self.client.login(username=self.owner.username, password="x")
+        response = self.client.get(reverse("activities:audit_log"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Task")
+
+    def test_workstream_owner_cannot_view_audit_log(self):
+        self.client.login(username="lead", password="pass12345")
+        response = self.client.get(reverse("activities:audit_log"))
+        self.assertRedirects(response, reverse("dashboard:home"))
