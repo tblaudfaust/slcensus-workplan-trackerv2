@@ -111,6 +111,24 @@ body {
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
   height: 100%;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.kpi-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+}
+
+.kpi-card-link:hover .kpi-card {
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.15);
+  transform: translateY(-1px);
+}
+
+.kpi-card-link .kpi-label .bi-box-arrow-up-right {
+  opacity: 0.5;
+  vertical-align: middle;
 }
 
 .kpi-card .kpi-value {

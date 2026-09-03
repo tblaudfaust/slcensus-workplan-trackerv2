@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from apps.activities.forms import ActivityFilterForm
@@ -21,6 +22,23 @@ def _filtered_queryset(request, project):
     qs = Activity.objects.filter(project=project).select_related("workstream", "responsible")
     form = ActivityFilterForm(request.GET or None, project=project)
     return _apply_filters(qs, form), form
+
+
+def _activities_url(request, **overrides):
+    """Builds an activities:list URL that reproduces the dashboard's
+    current filters (so a KPI number and the list it links to always
+    agree), with the given fields overridden or removed (pass None to
+    drop a key entirely -- e.g. a status override should replace, not
+    add to, an existing status filter)."""
+    qs = request.GET.copy()
+    for key, value in overrides.items():
+        if value is None:
+            qs.pop(key, None)
+        else:
+            qs[key] = value
+    query = qs.urlencode()
+    url = reverse("activities:list")
+    return f"{url}?{query}" if query else url
 
 
 @login_required
@@ -55,6 +73,8 @@ def home(request):
             "upcoming": upcoming,
             "overdue_list": overdue_list,
             "unassigned_list": unassigned_list,
+            "at_risk_url": _activities_url(request, status=Status.AT_RISK),
+            "overdue_url": _activities_url(request, status=None, overdue_only="1"),
         },
     )
 

@@ -84,3 +84,29 @@ class DashboardAccessTests(TestCase):
         self.client.login(username="owner", password="pass12345")
         response = self.client.get(reverse("dashboard:home"))
         self.assertNotContains(response, "data-countdown-target")
+
+
+class KpiHyperlinkTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="pass12345", role=Role.PROJECT_OWNER)
+        self.project = Project.objects.create(name="Census", owner=self.owner)
+        self.client.login(username="owner", password="pass12345")
+
+    def test_at_risk_card_links_to_filtered_activity_list(self):
+        response = self.client.get(reverse("dashboard:home"))
+        self.assertContains(response, f'href="{reverse("activities:list")}?status=AT_RISK"')
+
+    def test_overdue_card_links_to_overdue_filtered_list(self):
+        response = self.client.get(reverse("dashboard:home"))
+        self.assertContains(response, f'href="{reverse("activities:list")}?overdue_only=1"')
+
+    def test_at_risk_link_preserves_other_active_filters(self):
+        ws = Workstream.objects.create(project=self.project, name="GIS")
+        response = self.client.get(reverse("dashboard:home"), {"workstream": ws.pk})
+        self.assertContains(response, f"workstream={ws.pk}")
+        self.assertContains(response, "status=AT_RISK")
+
+    def test_overdue_link_drops_any_active_status_filter(self):
+        response = self.client.get(reverse("dashboard:home"), {"status": "ONGOING"})
+        self.assertNotIn("status", response.context["overdue_url"])
+        self.assertIn("overdue_only=1", response.context["overdue_url"])

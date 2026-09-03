@@ -96,16 +96,20 @@
     </div>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
-    <div class="kpi-card p-3">
-      <div class="kpi-value" style="color:var(--ct-amber);">{{ kpis.status_counts.AT_RISK }}</div>
-      <div class="kpi-label">At Risk</div>
-    </div>
+    <a href="{{ at_risk_url }}" class="kpi-card-link" title="View at-risk activities">
+      <div class="kpi-card p-3">
+        <div class="kpi-value" style="color:var(--ct-amber);">{{ kpis.status_counts.AT_RISK }}</div>
+        <div class="kpi-label">At Risk <i class="bi bi-box-arrow-up-right small"></i></div>
+      </div>
+    </a>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
-    <div class="kpi-card p-3">
-      <div class="kpi-value text-danger">{{ kpis.overdue }}</div>
-      <div class="kpi-label">Overdue</div>
-    </div>
+    <a href="{{ overdue_url }}" class="kpi-card-link" title="View overdue activities">
+      <div class="kpi-card p-3">
+        <div class="kpi-value text-danger">{{ kpis.overdue }}</div>
+        <div class="kpi-label">Overdue <i class="bi bi-box-arrow-up-right small"></i></div>
+      </div>
+    </a>
   </div>
   <div class="col-6 col-md-3 col-lg-2">
     <div class="kpi-card p-3">
@@ -130,7 +134,7 @@
   </div>
 </div>
 
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-3 align-items-start">
   <div class="col-lg-5">
     <div class="section-card h-100">
       <h6 class="mb-3">Status Breakdown</h6>
@@ -141,34 +145,34 @@
   </div>
   <div class="col-lg-7">
     <div class="section-card h-100">
-      <h6 class="mb-3">Workstream Performance (% Complete)</h6>
-      <div style="position:relative; height:260px;">
-        <canvas id="workstreamChart"></canvas>
+      <h6 class="mb-3">Workstream Performance</h6>
+      <div class="table-responsive" style="max-height:320px; overflow-y:auto;">
+        <table class="table table-sm align-middle mb-0">
+          <thead><tr><th>Workstream</th><th>Total</th><th>Completed</th><th>Overdue</th><th>% Complete</th></tr></thead>
+          <tbody>
+            {% for row in workstream_rows %}
+            <tr class="table-hover-row">
+              <td><a href="{% url 'projects:workstream_detail' row.workstream.pk %}">{{ row.workstream.name }}</a></td>
+              <td>{{ row.total }}</td>
+              <td>{{ row.completed }}</td>
+              <td>{% if row.overdue %}<span class="text-danger fw-semibold">{{ row.overdue }}</span>{% else %}0{% endif %}</td>
+              <td style="min-width:160px;">
+                <div class="progress progress-thin"><div class="progress-bar bg-success" style="width:{{ row.percent }}%"></div></div>
+                <span class="small text-muted">{{ row.percent }}%</span>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
 </div>
 
 <div class="section-card mb-3">
-  <h6 class="mb-3">Workstream Performance</h6>
-  <div class="table-responsive">
-    <table class="table table-sm align-middle mb-0">
-      <thead><tr><th>Workstream</th><th>Total</th><th>Completed</th><th>Overdue</th><th>% Complete</th></tr></thead>
-      <tbody>
-        {% for row in workstream_rows %}
-        <tr class="table-hover-row">
-          <td><a href="{% url 'projects:workstream_detail' row.workstream.pk %}">{{ row.workstream.name }}</a></td>
-          <td>{{ row.total }}</td>
-          <td>{{ row.completed }}</td>
-          <td>{% if row.overdue %}<span class="text-danger fw-semibold">{{ row.overdue }}</span>{% else %}0{% endif %}</td>
-          <td style="min-width:160px;">
-            <div class="progress progress-thin"><div class="progress-bar bg-success" style="width:{{ row.percent }}%"></div></div>
-            <span class="small text-muted">{{ row.percent }}%</span>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <h6 class="mb-3">Workstream Performance (% Complete)</h6>
+  <div style="position:relative; height:260px;">
+    <canvas id="workstreamChart"></canvas>
   </div>
 </div>
 
