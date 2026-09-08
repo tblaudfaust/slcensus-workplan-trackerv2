@@ -9,7 +9,15 @@ from apps.activities.models import Activity, Status
 from apps.projects.models import Project, Workstream
 
 from .duplicates import check_duplicates, load_existing_activities
-from .parsing import _promote_header_row, match_columns, normalize_header, normalize_status_text, parse_sheet
+from .parsing import (
+    _drop_blank_columns,
+    _promote_header_row,
+    match_columns,
+    normalize_header,
+    normalize_status_text,
+    parse_sheet,
+    resolve_workstream_alias,
+)
 from .services import commit_upload
 
 
@@ -277,3 +285,108 @@ class DuplicateDetectionTests(TestCase):
         check_duplicates(sheet2_rows, seen, [])
         self.assertIsNone(sheet1_rows[0].duplicate_info)
         self.assertIsNotNone(sheet2_rows[0].duplicate_info)
+
+
+class WorkstreamAliasTests(TestCase):
+    def test_known_messy_label_resolves_to_canonical_name(self):
+        self.assertEqual(resolve_workstream_alias("Mass Media"), "Publicity")
+        self.assertEqual(resolve_workstream_alias("HR/GIS"), "Human Resources")
+        self.assertEqual(resolve_workstream_alias("Data Science / GIS"), "Data Science")
+        self.assertEqual(resolve_workstream_alias("Logistics / Data Science"), "Logistics/Data Science")
+
+    def test_case_and_punctuation_insensitive(self):
+        self.assertEqual(resolve_workstream_alias("mass media"), "Publicity")
+        self.assertEqual(resolve_workstream_alias("  Mass   Media  "), "Publicity")
+        self.assertEqual(resolve_workstream_alias("hr-gis"), "Human Resources")
+
+    def test_unrecognized_label_passes_through_unchanged(self):
+        self.assertEqual(resolve_workstream_alias("GIS"), "GIS")
+        self.assertEqual(resolve_workstream_alias("Some Brand New Team"), "Some Brand New Team")
+
+    def test_blank_cell_falls_back_to_general_not_sheet_name(self):
+        df = pd.DataFrame({"Milestone/Activity": ["Task A"], "Workstream": [""]})
+        mapping = {"name": "Milestone/Activity", "workstream": "Workstream"}
+        rows = parse_sheet(df, mapping, default_workstream_name="CONSOLIDATED_DETAILED_TIMELINE")
+        self.assertEqual(rows[0].data["workstream_name"], "General")
+
+    def test_alias_applied_during_parse_sheet(self):
+        df = pd.DataFrame({"Milestone/Activity": ["Task A"], "Workstream": ["Digital Advocacy"]})
+        mapping = {"name": "Milestone/Activity", "workstream": "Workstream"}
+        rows = parse_sheet(df, mapping, default_workstream_name="General")
+        self.assertEqual(rows[0].data["workstream_name"], "Publicity")
+
+
+class DropBlankColumnsTests(TestCase):
+    def test_leaves_small_sheets_untouched(self):
+        df = pd.DataFrame({"A": ["1"], "B": [""]})
+        result = _drop_blank_columns(df)
+        self.assertEqual(list(result.columns), ["A", "B"])
+
+    def test_drops_entirely_blank_columns_on_wide_sheets(self):
+        # Simulates the Excel "phantom used range" artifact: a real table
+        # plus hundreds of columns that are blank in every row.
+        data = {"A": ["1", "2"], "B": ["x", "y"]}
+        for i in range(300):
+            data[f"blank_{i}"] = ["", ""]
+        df = pd.DataFrame(data)
+        result = _drop_blank_columns(df)
+        self.assertEqual(list(result.columns), ["A", "B"])
+
+    def test_column_with_any_content_is_kept(self):
+        data = {"A": ["1", "2"]}
+        for i in range(300):
+            data[f"blank_{i}"] = ["", ""]
+        data["mostly_blank"] = ["", "has a value"]
+        df = pd.DataFrame(data)
+        result = _drop_blank_columns(df)
+        self.assertIn("mostly_blank", result.columns)
+
+
+class ResponsibleEmailMatchingTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER)
+        self.project = Project.objects.create(name="Census", owner=self.owner)
+        self.foluke = User.objects.create_user(
+            "adebayo@unfpa.org", password="x", email="adebayo@unfpa.org", first_name="Foluke", last_name="Adebayo"
+        )
+
+    def _sheets(self, rows):
+        return {"GIS": pd.DataFrame(rows)}
+
+    def test_matches_by_email_even_when_name_text_does_not_match_username(self):
+        sheets = self._sheets(
+            {
+                "Milestone/Activity": ["Finalize EA boundaries"],
+                "Responsible Person/Team Contact": ["GIS LEAD-Sileh Bah   Consultant-Dr. Adebayo"],
+                "Email": ["silleh.bah@statistics.sl adebayo@unfpa.org"],
+            }
+        )
+        mapping = {
+            "GIS": {
+                "name": "Milestone/Activity",
+                "responsible": "Responsible Person/Team Contact",
+                "responsible_email": "Email",
+            }
+        }
+        commit_upload(
+            project=self.project, workstream_override=None, sheets=sheets, mapping=mapping,
+            uploaded_by=self.owner, file_name="test.xlsx",
+        )
+        activity = Activity.objects.get()
+        # The first email token (silleh.bah@...) doesn't match any account;
+        # the second (adebayo@unfpa.org) does -- confirms every token in a
+        # multi-address cell is tried, not just the first.
+        self.assertEqual(activity.responsible, self.foluke)
+        self.assertIn("Sileh Bah", activity.responsible_text)
+
+    def test_falls_back_to_name_matching_when_no_email_column(self):
+        sheets = self._sheets(
+            {"Milestone/Activity": ["Task"], "Responsible Person/Team Contact": ["adebayo@unfpa.org"]}
+        )
+        mapping = {"GIS": {"name": "Milestone/Activity", "responsible": "Responsible Person/Team Contact"}}
+        commit_upload(
+            project=self.project, workstream_override=None, sheets=sheets, mapping=mapping,
+            uploaded_by=self.owner, file_name="test.xlsx",
+        )
+        activity = Activity.objects.get()
+        self.assertEqual(activity.responsible, self.foluke)

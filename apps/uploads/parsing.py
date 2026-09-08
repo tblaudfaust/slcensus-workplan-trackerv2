@@ -25,6 +25,7 @@ FIELDS = {
     "dependency": "Dependency / Input",
     "deliverable": "Deliverable / Expected Output",
     "responsible": "Responsible Person / Team Contact",
+    "responsible_email": "Responsible Email",
     "status": "Status / Remark",
     "phase": "Phase",
 }
@@ -54,6 +55,7 @@ COLUMN_ALIASES = {
         "responsible person", "responsible", "team contact", "owner", "responsible officer",
         "focal point", "responsible person team contact", "assigned to", "contact person",
     ],
+    "responsible_email": ["email", "email address", "responsible email", "contact email"],
     "status": [
         "status", "remark", "remarks", "status remark", "comments", "progress status", "comment",
     ],
@@ -71,6 +73,99 @@ STATUS_KEYWORDS = [
 ]
 
 _PERCENT_RE = re.compile(r"(\d{1,3})\s*%")
+
+# Real workbooks -- especially a single "consolidated" sheet with a
+# free-text "Workstream" column instead of one tab per workstream -- tend
+# to accumulate dozens of one-off sub-category labels for what's really
+# just a handful of teams (e.g. 30+ distinct communications-related labels
+# that are all really "Publicity"). Matched against the *normalized*
+# raw value (see normalize_header) so punctuation/case/spacing variants of
+# the same label all resolve the same way. Anything not listed here is
+# left as-is -- this folds *known* messy labels onto a canonical name, it
+# doesn't invent new workstreams or guess at unfamiliar ones.
+WORKSTREAM_ALIASES = {
+    # -- Publicity: the vast majority of real-world fragmentation happens
+    # here, since a communications team's plan naturally divides into many
+    # named sub-activities that all still belong to one workstream.
+    "mass media": "Publicity",
+    "media engagement": "Publicity",
+    "media relations": "Publicity",
+    "digital communication": "Publicity",
+    "message development": "Publicity",
+    "community mobilisation": "Publicity",
+    "community mobilization": "Publicity",
+    "stakeholder engagement": "Publicity",
+    "targeted communication": "Publicity",
+    "public information": "Publicity",
+    "public trust": "Publicity",
+    "strategic communication": "Publicity",
+    "leadership communication": "Publicity",
+    "national countdown": "Publicity",
+    "regional communication": "Publicity",
+    "digital advocacy": "Publicity",
+    "risk communication": "Publicity",
+    "crisis communication": "Publicity",
+    "stakeholder mobilisation": "Publicity",
+    "stakeholder mobilization": "Publicity",
+    "inclusive communication": "Publicity",
+    "branding visibility": "Publicity",
+    "government communication": "Publicity",
+    "high level advocacy": "Publicity",
+    "publications": "Publicity",
+    "campaign development": "Publicity",
+    "event management": "Publicity",
+    "iec visibility": "Publicity",
+    "broadcast communication": "Publicity",
+    "public education": "Publicity",
+    "mass communication": "Publicity",
+    "digital mass media": "Publicity",
+    "census night communication": "Publicity",
+    "census day communication": "Publicity",
+    # -- Human Resources
+    "hr": "Human Resources",
+    "hr team": "Human Resources",
+    "hr gis": "Human Resources",
+    "hr sg": "Human Resources",
+    "dsd hr": "Human Resources",
+    "sg dsg hr": "Human Resources",
+    "recruitment": "Human Resources",
+    "training": "Human Resources",
+    # -- Data Science
+    "data capture system": "Data Science",
+    "data processing": "Data Science",
+    "data science hr": "Data Science",
+    "data science gis": "Data Science",
+    "data science field operations": "Data Science",
+    "systems data science": "Data Science",
+    "operations support system": "Data Science",
+    "results": "Data Science",
+    "reporting": "Data Science",
+    "evaluation": "Data Science",
+    "quality assurance": "Data Science",
+    # -- Field Operations
+    "field operations planning": "Field Operations",
+    "field deployment": "Field Operations",
+    "listing": "Field Operations",
+    "enumeration": "Field Operations",
+    "zero hour": "Field Operations",
+    # -- Logistics/Data Science
+    "logistics": "Logistics/Data Science",
+    "logistics data science": "Logistics/Data Science",
+    # -- General (project-wide, not owned by one team)
+    "readiness gate": "General",
+    # -- End-to-End Systems
+    "systems": "End-to-End Systems",
+    # -- GIS
+    "gis monitoring": "GIS",
+}
+
+
+def resolve_workstream_alias(name):
+    """Folds a known messy label onto its canonical workstream name; returns
+    `name` unchanged if it isn't a recognized alias (including when it
+    already *is* a canonical name -- normalize_header("GIS") isn't a key in
+    WORKSTREAM_ALIASES, so it passes through untouched)."""
+    return WORKSTREAM_ALIASES.get(normalize_header(name), name)
 
 
 def normalize_header(value):
@@ -120,6 +215,21 @@ HEADER_SCAN_ROWS = 10
 MIN_HEADER_MATCHES = 2
 
 
+def _drop_blank_columns(df):
+    """Excel sometimes tracks a much larger "used range" than the visible
+    data -- stray formatting far to the right of the real table reads as
+    thousands of entirely-empty columns via pandas. Left alone, those
+    would make header-detection scan thousands of blank cells per row and
+    flood the mapping UI with thousands of "unmatched" phantom columns.
+    Dropping every column that's blank in *every* row (a cheap, vectorized
+    check) trims the sheet back down to what a person would actually see
+    open it in Excel, before any real parsing happens."""
+    if df.empty or df.shape[1] < 200:
+        return df
+    non_blank = df.apply(lambda col: col.astype(str).str.strip().ne("").any(), axis=0)
+    return df.loc[:, non_blank]
+
+
 def _promote_header_row(df):
     """Real-world workbooks sometimes carry a title row (and a blank row)
     above the real header -- e.g. "STATISTICS SIERRA LEONE, 2026 PHC
@@ -150,6 +260,12 @@ def _promote_header_row(df):
     new_header = [str(v).strip() for v in df.iloc[header_row].tolist()]
     data = df.iloc[header_row + 1 :].reset_index(drop=True)
     data.columns = new_header
+
+    # A blank header means "not a real column" even if a stray value
+    # happens to sit in some row underneath it (a leftover formatting
+    # artifact, a stray note typed in a far-right cell, etc.) -- keeping
+    # it would only add noise to the mapping UI's "unmatched columns" list.
+    data = data.loc[:, [h != "" for h in new_header]]
     return data
 
 
@@ -161,9 +277,9 @@ def read_uploaded_file(file_obj, filename):
     if lower.endswith(".csv"):
         df = pd.read_csv(io.BytesIO(raw), dtype=str, keep_default_na=False, header=None)
         stem = re.sub(r"\.csv$", "", filename, flags=re.IGNORECASE)
-        return {stem: _promote_header_row(df)}
+        return {stem: _promote_header_row(_drop_blank_columns(df))}
     raw_sheets = pd.read_excel(io.BytesIO(raw), sheet_name=None, dtype=str, keep_default_na=False, header=None)
-    return {name: _promote_header_row(df) for name, df in raw_sheets.items()}
+    return {name: _promote_header_row(_drop_blank_columns(df)) for name, df in raw_sheets.items()}
 
 
 def _parse_date(value):
@@ -259,8 +375,15 @@ def parse_sheet(df, mapping, default_workstream_name=None):
 
         duration = _parse_int(get("duration_days")) if mapping.get("duration_days") else None
 
-        workstream_name = get("workstream") if mapping.get("workstream") else ""
-        workstream_name = workstream_name or default_workstream_name or "General"
+        # A mapped-but-blank cell means "this row wasn't categorized" --
+        # that's a "General" situation, not "named after the sheet/file"
+        # (the old behavior), which produced a meaningless stray workstream
+        # whenever a consolidated single-sheet upload had empty cells.
+        if mapping.get("workstream"):
+            workstream_name = get("workstream") or "General"
+        else:
+            workstream_name = default_workstream_name or "General"
+        workstream_name = resolve_workstream_alias(workstream_name)
 
         status_value, progress = normalize_status_text(get("status"))
 
@@ -273,6 +396,7 @@ def parse_sheet(df, mapping, default_workstream_name=None):
             "dependency": get("dependency"),
             "deliverable": get("deliverable"),
             "responsible_text": get("responsible"),
+            "responsible_email": get("responsible_email"),
             "status": status_value,
             "progress_percent": progress,
             "phase": get("phase"),

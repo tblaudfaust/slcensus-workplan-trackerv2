@@ -1,3 +1,5 @@
+import re
+
 from django.db import transaction
 
 from apps.activities.models import Activity
@@ -47,7 +49,7 @@ def commit_upload(*, project, workstream_override, sheets, mapping, uploaded_by,
             row_key = Activity.build_row_key(workstream.id, data["name"])
 
             existing = Activity.objects.filter(project=project, source_row_key=row_key).first()
-            responsible_user = _match_responsible(data["responsible_text"])
+            responsible_user = _match_responsible(data["responsible_text"], data.get("responsible_email"))
 
             if existing:
                 before = snapshot(existing)
@@ -117,11 +119,28 @@ def _get_or_create_workstream(project, name):
     return Workstream.objects.create(project=project, name=name)
 
 
-def _match_responsible(text):
-    if not text:
-        return None
+_EMAIL_SPLIT_RE = re.compile(r"[,;/\s]+")
+
+
+def _match_responsible(text, email_text=None):
+    """Prefers matching by email when the workbook has a dedicated email
+    column (far more reliable than fuzzy name matching, and several real
+    accounts are already set up with exactly these addresses) -- a cell
+    can list more than one address ("a@x.org b@y.org") when an activity
+    has a lead plus a consultant, so every token is tried. Falls back to
+    matching the free-text responsible name/username if no email matches."""
     from apps.accounts.models import User
 
+    if email_text:
+        for token in _EMAIL_SPLIT_RE.split(email_text.strip()):
+            if not token or "@" not in token:
+                continue
+            user = User.objects.filter(email__iexact=token).first()
+            if user:
+                return user
+
+    if not text:
+        return None
     text = text.strip()
     return (
         User.objects.filter(email__iexact=text).first()
