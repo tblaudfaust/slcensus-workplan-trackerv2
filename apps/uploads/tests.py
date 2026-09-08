@@ -8,6 +8,7 @@ from apps.accounts.models import Role, User
 from apps.activities.models import Activity, Status
 from apps.projects.models import Project, Workstream
 
+from .duplicates import check_duplicates, load_existing_activities
 from .parsing import _promote_header_row, match_columns, normalize_header, normalize_status_text, parse_sheet
 from .services import commit_upload
 
@@ -212,3 +213,67 @@ class CommitUploadTests(TestCase):
         )
         activity = Activity.objects.get()
         self.assertEqual(activity.workstream, override)
+
+
+class DuplicateDetectionTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER)
+        self.project = Project.objects.create(name="Census", owner=self.owner)
+        self.gis = Workstream.objects.create(project=self.project, name="GIS")
+        self.general = Workstream.objects.create(project=self.project, name="General")
+
+    def _rows(self, names, workstream_name="GIS"):
+        df = pd.DataFrame({"Milestone/Activity": names})
+        mapping = {"name": "Milestone/Activity"}
+        return parse_sheet(df, mapping, default_workstream_name=workstream_name)
+
+    def test_no_duplicate_flagged_against_empty_project(self):
+        rows = self._rows(["Finalize census frame"])
+        check_duplicates(rows, {}, load_existing_activities(self.project))
+        self.assertIsNone(rows[0].duplicate_info)
+
+    def test_flags_near_duplicate_of_existing_activity_in_another_workstream(self):
+        Activity.objects.create(
+            project=self.project,
+            workstream=self.gis,
+            name="Grass-roots Census Locality Register Validation & Gap Mop-Up",
+        )
+        rows = self._rows(
+            ["Grass-root Census Locality Register Validation and Gap Mop-Up"], workstream_name="General"
+        )
+        check_duplicates(rows, {}, load_existing_activities(self.project))
+        self.assertIsNotNone(rows[0].duplicate_info)
+        self.assertIn("GIS", rows[0].duplicate_info)
+
+    def test_exact_same_workstream_match_is_not_flagged_as_duplicate(self):
+        # An exact match in the SAME workstream is an update on commit, not
+        # a duplicate concern -- should not be flagged.
+        Activity.objects.create(project=self.project, workstream=self.gis, name="Finalize census frame")
+        rows = self._rows(["Finalize census frame"], workstream_name="GIS")
+        check_duplicates(rows, {}, load_existing_activities(self.project))
+        self.assertIsNone(rows[0].duplicate_info)
+
+    def test_unrelated_names_are_not_flagged(self):
+        Activity.objects.create(project=self.project, workstream=self.gis, name="Recruit enumerators")
+        rows = self._rows(["Procure vehicles for field operations"], workstream_name="GIS")
+        check_duplicates(rows, {}, load_existing_activities(self.project))
+        self.assertIsNone(rows[0].duplicate_info)
+
+    def test_flags_repeated_row_within_the_same_upload(self):
+        rows = self._rows(["Finalize census frame", "Finalize census frame"], workstream_name="GIS")
+        seen = {}
+        check_duplicates(rows, seen, [])
+        self.assertIsNone(rows[0].duplicate_info)
+        self.assertIn("row 2", rows[1].duplicate_info)
+
+    def test_duplicate_within_upload_detected_across_sheets(self):
+        # Simulates two sheets in the same upload both contributing a row
+        # for the same (workstream, name) -- the shared `seen` dict is
+        # what catches this across separate check_duplicates() calls.
+        seen = {}
+        sheet1_rows = self._rows(["Finalize census frame"], workstream_name="GIS")
+        check_duplicates(sheet1_rows, seen, [])
+        sheet2_rows = self._rows(["Finalize census frame"], workstream_name="GIS")
+        check_duplicates(sheet2_rows, seen, [])
+        self.assertIsNone(sheet1_rows[0].duplicate_info)
+        self.assertIsNotNone(sheet2_rows[0].duplicate_info)

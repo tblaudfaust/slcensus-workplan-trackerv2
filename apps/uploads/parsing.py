@@ -221,6 +221,7 @@ class ParsedRow:
         self.row_number = row_number
         self.data = data
         self.errors = errors
+        self.duplicate_info = None  # set later by uploads.duplicates.check_duplicates, if run
 
     @property
     def is_valid(self):

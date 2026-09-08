@@ -16,6 +16,7 @@
     <div class="small">
       <span class="badge text-bg-success">{{ sheet.valid_count }} ready</span>
       {% if sheet.invalid_count %}<span class="badge text-bg-danger">{{ sheet.invalid_count }} with issues</span>{% endif %}
+      {% if sheet.duplicate_count %}<span class="badge text-bg-warning text-dark">{{ sheet.duplicate_count }} possible duplicate{{ sheet.duplicate_count|pluralize }}</span>{% endif %}
     </div>
   </div>
 
@@ -43,6 +44,17 @@
     <ul class="mb-0">
       {% for row in sheet.invalid_rows %}
       <li>Row {{ row.row_number }}: {{ row.errors|join:"; " }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if sheet.duplicate_count %}
+  <div class="alert small mb-3" style="background:#fff3bf;border-color:#ffe066;">
+    <strong><i class="bi bi-exclamation-diamond"></i> {{ sheet.duplicate_count }} row(s) look like possible duplicates</strong> -- these will still be imported as new activities unless you fix the source file first; review before confirming.
+    <ul class="mb-0">
+      {% for row in sheet.duplicate_rows %}
+      <li>Row {{ row.row_number }} ("{{ row.data.name|truncatechars:50 }}"): {{ row.duplicate_info }}</li>
       {% endfor %}
     </ul>
   </div>

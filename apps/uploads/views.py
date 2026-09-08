@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.accounts import permissions
 from apps.projects.models import Workstream
 
+from .duplicates import check_duplicates, load_existing_activities
 from .forms import UploadForm
 from .models import UploadBatch
 from .parsing import FIELDS, match_columns, parse_sheet, read_uploaded_file
@@ -124,6 +125,9 @@ def upload_preview(request):
         messages.success(request, "Column mapping updated.")
         return redirect("uploads:preview")
 
+    existing_activities = load_existing_activities(project)
+    seen_within_upload = {}
+
     sheet_previews = []
     for sheet_name, df in sheets.items():
         sheet_mapping = pending["mapping"].get(sheet_name, {})
@@ -131,6 +135,10 @@ def upload_preview(request):
         parsed_rows = parse_sheet(df, sheet_mapping, default_workstream_name=default_ws_name)
         valid_rows = [r for r in parsed_rows if r.is_valid]
         invalid_rows = [r for r in parsed_rows if not r.is_valid]
+
+        check_duplicates(valid_rows, seen_within_upload, existing_activities)
+        duplicate_rows = [r for r in valid_rows if r.duplicate_info]
+
         sheet_previews.append(
             {
                 "name": sheet_name,
@@ -140,6 +148,8 @@ def upload_preview(request):
                 "valid_count": len(valid_rows),
                 "invalid_rows": invalid_rows[:20],
                 "invalid_count": len(invalid_rows),
+                "duplicate_rows": duplicate_rows[:20],
+                "duplicate_count": len(duplicate_rows),
                 "total": len(parsed_rows),
             }
         )
