@@ -5,7 +5,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
-from .models import NotificationLog, NotificationRule, RuleType
+from .models import NotificationChannel, NotificationLog, NotificationRule, RuleType
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,8 @@ def send_notification(*, rule_type, template, subject, context, recipients, acti
                 rule_type=rule_type,
                 activity=activity,
                 workstream=workstream,
-                recipient_email=user.email,
+                channel=NotificationChannel.EMAIL,
+                recipient=user.email,
                 subject=subject,
                 status="SENT",
             )
@@ -81,7 +82,8 @@ def send_notification(*, rule_type, template, subject, context, recipients, acti
                 rule_type=rule_type,
                 activity=activity,
                 workstream=workstream,
-                recipient_email=user.email,
+                channel=NotificationChannel.EMAIL,
+                recipient=user.email,
                 subject=subject,
                 status="FAILED",
                 error=str(exc),
@@ -89,10 +91,14 @@ def send_notification(*, rule_type, template, subject, context, recipients, acti
     return sent
 
 
-def already_sent_today(rule_type, activity):
+def already_sent_today(rule_type, activity, channel=NotificationChannel.EMAIL):
+    """Channel-scoped so email and SMS each independently fire at most
+    once per day for the same rule+activity -- they're complementary
+    delivery channels for the same event, not alternatives, so one
+    shouldn't suppress the other."""
     from django.utils import timezone
 
     today = timezone.localdate()
     return NotificationLog.objects.filter(
-        rule_type=rule_type, activity=activity, status="SENT", sent_at__date=today
+        rule_type=rule_type, activity=activity, channel=channel, status="SENT", sent_at__date=today
     ).exists()

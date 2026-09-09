@@ -12,7 +12,7 @@ class NotificationRuleAdmin(admin.ModelAdmin):
 
 @admin.register(NotificationLog)
 class NotificationLogAdmin(admin.ModelAdmin):
-    list_display = ("rule_type", "recipient_email", "subject", "status", "sent_at")
-    list_filter = ("rule_type", "status")
-    search_fields = ("recipient_email", "subject")
+    list_display = ("rule_type", "channel", "recipient", "subject", "status", "sent_at")
+    list_filter = ("rule_type", "channel", "status")
+    search_fields = ("recipient", "subject")
     readonly_fields = [f.name for f in NotificationLog._meta.fields]

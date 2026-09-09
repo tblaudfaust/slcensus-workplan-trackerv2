@@ -1,7 +1,8 @@
 import datetime
+from unittest.mock import Mock, patch
 
 from django.core import mail
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from apps.accounts.models import Role, User
@@ -17,6 +18,7 @@ from .emailing import (
     send_notification,
 )
 from .models import NotificationLog, NotificationRule, RuleType
+from .sms import SmsSendError, normalize_phone, send_sms
 
 
 class DefaultRuleSeedingTests(TestCase):
@@ -130,6 +132,77 @@ class SendNotificationTests(TestCase):
         self.assertFalse(already_sent_today(RuleType.TASK_ASSIGNED, self.activity))
 
 
+class NormalizePhoneTests(TestCase):
+    def test_already_prefixed_with_country_code(self):
+        self.assertEqual(normalize_phone("23230123456"), "23230123456")
+
+    def test_leading_plus_is_stripped(self):
+        self.assertEqual(normalize_phone("+23230123456"), "23230123456")
+
+    def test_local_eight_digit_form_gets_country_code(self):
+        self.assertEqual(normalize_phone("30123456"), "23230123456")
+
+    def test_local_nine_digit_form_with_leading_zero(self):
+        self.assertEqual(normalize_phone("030123456"), "23230123456")
+
+    def test_formatting_characters_are_stripped(self):
+        self.assertEqual(normalize_phone("+232 30-123-456"), "23230123456")
+
+    def test_blank_or_missing_returns_none(self):
+        self.assertIsNone(normalize_phone(""))
+        self.assertIsNone(normalize_phone(None))
+
+
+@override_settings(
+    SMS_ENABLED=True,
+    SMS_API_BASE_URL="https://api.sierrahive.com",
+    SMS_CLIENT_ID="111",
+    SMS_CLIENT_SECRET="222",
+    SMS_TOKEN="333",
+    SMS_SENDER_ID="SLCensus",
+)
+class SendSmsTests(TestCase):
+    def test_disabled_raises_without_any_network_call(self):
+        with override_settings(SMS_ENABLED=False):
+            with patch("apps.notifications.sms.requests.post") as mock_post:
+                with self.assertRaises(SmsSendError):
+                    send_sms("23230123456", "hello")
+                mock_post.assert_not_called()
+
+    def test_invalid_phone_raises_without_any_network_call(self):
+        with patch("apps.notifications.sms.requests.post") as mock_post:
+            with self.assertRaises(SmsSendError):
+                send_sms("", "hello")
+            mock_post.assert_not_called()
+
+    @patch("apps.notifications.sms.requests.post")
+    def test_success_sends_expected_payload_and_auth(self, mock_post):
+        mock_response = Mock()
+        mock_response.json.return_value = {"Status": "pending", "Ticket": "abc-123"}
+        mock_post.return_value = mock_response
+
+        result = send_sms("030123456", "You're assigned a task", reference="ref-1")
+
+        self.assertEqual(result["Status"], "pending")
+        mock_response.raise_for_status.assert_called_once()
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], "https://api.sierrahive.com/v1/messages/sms")
+        self.assertEqual(
+            kwargs["json"],
+            {"From": "SLCensus", "To": "23230123456", "Content": "You're assigned a task", "Reference": "ref-1"},
+        )
+        self.assertEqual(kwargs["headers"]["X-Wallet"], "Token 333")
+        self.assertTrue(kwargs["headers"]["Authorization"].startswith("Basic "))
+
+    @patch("apps.notifications.sms.requests.post")
+    def test_http_failure_raises_sms_send_error(self, mock_post):
+        import requests
+
+        mock_post.side_effect = requests.ConnectionError("network down")
+        with self.assertRaises(SmsSendError):
+            send_sms("23230123456", "hello")
+
+
 class ActivitySignalUploadSourceTests(TestCase):
     """A bulk upload can create/update hundreds of activities in one
     request; sending a real-time email per row (as happens for
@@ -199,7 +272,7 @@ class CheckDeadlinesCommandTests(TestCase):
         )
         call_command("check_deadlines")
         self.assertTrue(
-            NotificationLog.objects.filter(rule_type=RuleType.DEADLINE_REMINDER, recipient_email="r@example.org").exists()
+            NotificationLog.objects.filter(rule_type=RuleType.DEADLINE_REMINDER, recipient="r@example.org").exists()
         )
 
     def test_overdue_alert_sent_for_past_due_activity(self):
@@ -215,6 +288,49 @@ class CheckDeadlinesCommandTests(TestCase):
         )
         call_command("check_deadlines")
         self.assertTrue(NotificationLog.objects.filter(rule_type=RuleType.OVERDUE).exists())
+
+    @override_settings(SMS_ENABLED=True, SMS_CLIENT_ID="1", SMS_CLIENT_SECRET="2", SMS_TOKEN="3")
+    @patch("apps.notifications.sms.requests.post")
+    def test_overdue_alert_also_sends_sms_to_opted_in_recipient(self, mock_post):
+        mock_post.return_value = Mock(json=lambda: {"Status": "pending"})
+        self.responsible.phone = "23230123456"
+        self.responsible.receive_sms_notifications = True
+        self.responsible.save()
+        Activity.objects.create(
+            project=self.project,
+            workstream=self.ws,
+            name="Overdue task",
+            end_date=timezone.localdate() - datetime.timedelta(days=2),
+            status=Status.ONGOING,
+            responsible=self.responsible,
+        )
+        from django.core.management import call_command
+
+        call_command("check_deadlines")
+        self.assertTrue(
+            NotificationLog.objects.filter(
+                rule_type=RuleType.OVERDUE, channel="SMS", recipient="23230123456"
+            ).exists()
+        )
+        mock_post.assert_called_once()
+
+    @patch("apps.notifications.sms.requests.post")
+    def test_overdue_alert_skips_sms_for_recipient_not_opted_in(self, mock_post):
+        # self.responsible has no phone and receive_sms_notifications
+        # defaults to False -- SMS must never be attempted for them.
+        Activity.objects.create(
+            project=self.project,
+            workstream=self.ws,
+            name="Overdue task",
+            end_date=timezone.localdate() - datetime.timedelta(days=2),
+            status=Status.ONGOING,
+            responsible=self.responsible,
+        )
+        from django.core.management import call_command
+
+        call_command("check_deadlines")
+        self.assertFalse(NotificationLog.objects.filter(rule_type=RuleType.OVERDUE, channel="SMS").exists())
+        mock_post.assert_not_called()
 
     def test_workstream_overdue_alert_fires_at_threshold(self):
         from django.core.management import call_command
@@ -232,6 +348,58 @@ class CheckDeadlinesCommandTests(TestCase):
             )
         call_command("check_deadlines")
         self.assertTrue(NotificationLog.objects.filter(rule_type=RuleType.WORKSTREAM_OVERDUE).exists())
+
+
+class AtRiskAlertSmsTests(TestCase):
+    def setUp(self):
+        _seed_default_rules(sender=None)
+        owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER, email="owner@example.org")
+        self.project = Project.objects.create(name="Census", owner=owner)
+        self.ws = Workstream.objects.create(project=self.project, name="GIS")
+        self.responsible = User.objects.create_user(
+            "r", password="x", email="r@example.org", phone="23230123456", receive_sms_notifications=True
+        )
+        self.activity = Activity.objects.create(
+            project=self.project, workstream=self.ws, name="Task", status=Status.NOT_STARTED, responsible=self.responsible
+        )
+
+    @override_settings(SMS_ENABLED=True, SMS_CLIENT_ID="1", SMS_CLIENT_SECRET="2", SMS_TOKEN="3")
+    @patch("apps.notifications.sms.requests.post")
+    def test_marking_at_risk_sends_sms_to_opted_in_owner(self, mock_post):
+        from apps.activities.signals import activity_changed
+
+        mock_post.return_value = Mock(json=lambda: {"Status": "pending"})
+        self.activity.status = Status.AT_RISK
+        self.activity.save()
+        activity_changed.send(
+            sender=Activity,
+            activity=self.activity,
+            changed_fields={"status": ("Not Started", "At Risk")},
+            changed_by=None,
+            source="MANUAL",
+        )
+        self.assertTrue(
+            NotificationLog.objects.filter(
+                rule_type=RuleType.AT_RISK, channel="SMS", recipient="23230123456"
+            ).exists()
+        )
+        mock_post.assert_called_once()
+
+    @patch("apps.notifications.sms.requests.post")
+    def test_status_change_that_is_not_at_risk_sends_no_sms(self, mock_post):
+        from apps.activities.signals import activity_changed
+
+        self.activity.status = Status.ONGOING
+        self.activity.save()
+        activity_changed.send(
+            sender=Activity,
+            activity=self.activity,
+            changed_fields={"status": ("Not Started", "Ongoing")},
+            changed_by=None,
+            source="MANUAL",
+        )
+        self.assertFalse(NotificationLog.objects.filter(channel="SMS").exists())
+        mock_post.assert_not_called()
 
 
 class ValidationNotificationTests(TestCase):
@@ -267,7 +435,7 @@ class ValidationNotificationTests(TestCase):
             },
         )
         self.assertTrue(
-            NotificationLog.objects.filter(rule_type=RuleType.VALIDATION_REQUESTED, recipient_email="lead@example.org").exists()
+            NotificationLog.objects.filter(rule_type=RuleType.VALIDATION_REQUESTED, recipient="lead@example.org").exists()
         )
 
     def test_validating_notifies_the_project_owner(self):
@@ -277,7 +445,7 @@ class ValidationNotificationTests(TestCase):
         self.client.post(reverse("activities:validate", args=[self.activity.pk]))
         self.assertTrue(
             NotificationLog.objects.filter(
-                rule_type=RuleType.COMPLETION_VALIDATED, recipient_email="owner@example.org"
+                rule_type=RuleType.COMPLETION_VALIDATED, recipient="owner@example.org"
             ).exists()
         )
 
@@ -294,7 +462,7 @@ class ValidationNotificationTests(TestCase):
         self.client.post(reverse("activities:validate", args=[self.activity.pk]))
         self.assertTrue(
             NotificationLog.objects.filter(
-                rule_type=RuleType.COMPLETION_VALIDATED, recipient_email="co-owner@example.org"
+                rule_type=RuleType.COMPLETION_VALIDATED, recipient="co-owner@example.org"
             ).exists()
         )
 
@@ -313,5 +481,5 @@ class WeeklyDigestCoOwnerTests(TestCase):
 
         call_command("send_weekly_digest")
 
-        self.assertTrue(NotificationLog.objects.filter(recipient_email="owner@example.org").exists())
-        self.assertTrue(NotificationLog.objects.filter(recipient_email="co-owner@example.org").exists())
+        self.assertTrue(NotificationLog.objects.filter(recipient="owner@example.org").exists())
+        self.assertTrue(NotificationLog.objects.filter(recipient="co-owner@example.org").exists())

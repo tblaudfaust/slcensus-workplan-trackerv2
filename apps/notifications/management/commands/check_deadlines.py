@@ -6,7 +6,8 @@ from django.utils import timezone
 
 from apps.activities.models import Activity, Status
 from apps.notifications.emailing import already_sent_today, eligible_recipients, project_owner_recipients, send_notification
-from apps.notifications.models import NotificationLog, NotificationRule, RuleType
+from apps.notifications.models import NotificationChannel, NotificationLog, NotificationRule, RuleType
+from apps.notifications.sms import eligible_sms_recipients, send_sms_alert
 
 
 class Command(BaseCommand):
@@ -58,19 +59,33 @@ class Command(BaseCommand):
             end_date__lt=today, status__in=Status.open_statuses()
         ).select_related("responsible", "project", "workstream")
         for activity in activities:
-            if already_sent_today(RuleType.OVERDUE, activity):
-                continue
-            recipients = eligible_recipients(activity.responsible, *project_owner_recipients(activity.project))
-            if not recipients:
-                continue
-            count += send_notification(
-                rule_type=RuleType.OVERDUE,
-                template="overdue",
-                subject=f"[Census Tracker] OVERDUE: {activity.name}",
-                context={"activity": activity, "recipient_name": "team"},
-                recipients=recipients,
-                activity=activity,
-            )
+            people = (activity.responsible, *project_owner_recipients(activity.project))
+
+            if not already_sent_today(RuleType.OVERDUE, activity, channel=NotificationChannel.EMAIL):
+                recipients = eligible_recipients(*people)
+                if recipients:
+                    count += send_notification(
+                        rule_type=RuleType.OVERDUE,
+                        template="overdue",
+                        subject=f"[Census Tracker] OVERDUE: {activity.name}",
+                        context={"activity": activity, "recipient_name": "team"},
+                        recipients=recipients,
+                        activity=activity,
+                    )
+
+            # Overdue/at-risk are the two urgent, action-needed alerts --
+            # the only ones sent by SMS (real SMS costs money per message
+            # and is more intrusive, so it's reserved for what genuinely
+            # needs immediate attention, not every routine notification).
+            if not already_sent_today(RuleType.OVERDUE, activity, channel=NotificationChannel.SMS):
+                sms_recipients = eligible_sms_recipients(*people)
+                if sms_recipients:
+                    count += send_sms_alert(
+                        rule_type=RuleType.OVERDUE,
+                        message=f"[Census Tracker] OVERDUE: {activity.name} was due {activity.end_date:%d %b %Y}",
+                        recipients=sms_recipients,
+                        activity=activity,
+                    )
         return count
 
     def _send_workstream_overdue_alerts(self, today):

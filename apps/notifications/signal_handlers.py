@@ -5,6 +5,7 @@ from apps.activities.signals import activity_changed, activity_created
 
 from .emailing import activity_owner_recipients, eligible_recipients, project_owner_recipients, rule_enabled, send_notification
 from .models import RuleType
+from .sms import eligible_sms_recipients, send_sms_alert
 
 
 @receiver(activity_created)
@@ -58,7 +59,7 @@ def on_activity_changed(sender, activity, changed_fields, changed_by=None, sourc
                 )
 
         if activity.status == Status.AT_RISK and rule_enabled(RuleType.AT_RISK):
-            recipients = eligible_recipients(
+            at_risk_people = (
                 *activity_owner_recipients(activity), *project_owner_recipients(activity.project), activity.workstream.lead
             )
             send_notification(
@@ -66,7 +67,18 @@ def on_activity_changed(sender, activity, changed_fields, changed_by=None, sourc
                 template="at_risk",
                 subject=f"[Census Tracker] AT RISK: {activity.name}",
                 context={"activity": activity, "recipient_name": "team"},
-                recipients=recipients,
+                recipients=eligible_recipients(*at_risk_people),
+                activity=activity,
+            )
+            # Overdue/at-risk are the two urgent, action-needed alerts --
+            # the only ones sent by SMS (real SMS costs money per message
+            # and is more intrusive, so it's reserved for what genuinely
+            # needs immediate attention, not every routine status change).
+            end_date_text = f" (ends {activity.end_date:%d %b %Y})" if activity.end_date else ""
+            send_sms_alert(
+                rule_type=RuleType.AT_RISK,
+                message=f"[Census Tracker] AT RISK: {activity.name}{end_date_text}",
+                recipients=eligible_sms_recipients(*at_risk_people),
                 activity=activity,
             )
 

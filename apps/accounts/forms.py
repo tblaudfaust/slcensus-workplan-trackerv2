@@ -35,10 +35,12 @@ class UserUpdateForm(forms.ModelForm):
             "phone",
             "is_active",
             "receive_email_notifications",
+            "receive_sms_notifications",
         ]
         widgets = {
             "is_active": forms.CheckboxInput(),
             "receive_email_notifications": forms.CheckboxInput(),
+            "receive_sms_notifications": forms.CheckboxInput(),
         }
 
     def __init__(self, *args, **kwargs):

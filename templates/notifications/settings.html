@@ -39,18 +39,19 @@
   <h6 class="mb-3">Recent Notification Activity</h6>
   <div class="table-responsive">
     <table class="table table-sm mb-0">
-      <thead><tr><th>When</th><th>Type</th><th>Recipient</th><th>Subject</th><th>Status</th></tr></thead>
+      <thead><tr><th>When</th><th>Type</th><th>Channel</th><th>Recipient</th><th>Subject</th><th>Status</th></tr></thead>
       <tbody>
         {% for log in recent_log %}
         <tr>
           <td>{{ log.sent_at|date:"d M Y H:i" }}</td>
           <td>{{ log.get_rule_type_display }}</td>
-          <td>{{ log.recipient_email }}</td>
+          <td>{{ log.get_channel_display }}</td>
+          <td>{{ log.recipient }}</td>
           <td>{{ log.subject }}</td>
           <td>{% if log.status == "SENT" %}<span class="badge text-bg-success">Sent</span>{% else %}<span class="badge text-bg-danger">Failed</span>{% endif %}</td>
         </tr>
         {% empty %}
-        <tr><td colspan="5" class="text-center text-muted py-3">No notifications sent yet.</td></tr>
+        <tr><td colspan="6" class="text-center text-muted py-3">No notifications sent yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

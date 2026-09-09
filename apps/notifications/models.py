@@ -45,6 +45,11 @@ class NotificationRule(models.Model):
         return label
 
 
+class NotificationChannel(models.TextChoices):
+    EMAIL = "EMAIL", "Email"
+    SMS = "SMS", "SMS"
+
+
 class NotificationLog(models.Model):
     rule_type = models.CharField(max_length=30, choices=RuleType.choices)
     activity = models.ForeignKey(
@@ -53,7 +58,11 @@ class NotificationLog(models.Model):
     workstream = models.ForeignKey(
         "projects.Workstream", on_delete=models.CASCADE, null=True, blank=True, related_name="notifications"
     )
-    recipient_email = models.EmailField()
+    channel = models.CharField(max_length=10, choices=NotificationChannel.choices, default=NotificationChannel.EMAIL)
+    # Holds an email address for EMAIL-channel entries and a phone number
+    # for SMS-channel entries -- a plain CharField rather than EmailField
+    # since it has to hold both.
+    recipient = models.CharField(max_length=254)
     subject = models.CharField(max_length=255)
     status = models.CharField(
         max_length=10,
@@ -68,4 +77,4 @@ class NotificationLog(models.Model):
         indexes = [models.Index(fields=["rule_type", "activity", "sent_at"])]
 
     def __str__(self):
-        return f"{self.rule_type} -> {self.recipient_email} ({self.sent_at:%Y-%m-%d})"
+        return f"{self.rule_type} -> {self.recipient} ({self.sent_at:%Y-%m-%d})"

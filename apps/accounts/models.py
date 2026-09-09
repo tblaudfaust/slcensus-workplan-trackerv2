@@ -17,6 +17,11 @@ class User(AbstractUser):
         default=True,
         help_text="Turn off to stop receiving task/deadline/status notification emails.",
     )
+    receive_sms_notifications = models.BooleanField(
+        default=False,
+        help_text="Turn on to also receive urgent (overdue/at-risk) alerts by SMS, in "
+        "addition to email. Requires a phone number on file; standard message rates apply.",
+    )
 
     class Meta:
         ordering = ["first_name", "last_name", "username"]

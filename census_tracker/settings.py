@@ -152,6 +152,19 @@ EMAIL_USE_SSL = env("EMAIL_USE_SSL")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=not EMAIL_USE_SSL)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Census Workplan Tracker <noreply@example.org>")
 
+# --- SMS (AppHiveSL) -------------------------------------------------------
+# Off by default: sending real SMS costs money per message, so this must be
+# deliberately turned on once credentials are configured -- see
+# apps/notifications/sms.py.
+SMS_ENABLED = env.bool("SMS_ENABLED", default=False)
+SMS_API_BASE_URL = env("SMS_API_BASE_URL", default="https://api.sierrahive.com")
+SMS_CLIENT_ID = env("SMS_CLIENT_ID", default="")
+SMS_CLIENT_SECRET = env("SMS_CLIENT_SECRET", default="")
+SMS_TOKEN = env("SMS_TOKEN", default="")
+# The SMS "From" sender name shown to recipients -- AppHive caps this at 11
+# characters.
+SMS_SENDER_ID = env("SMS_SENDER_ID", default="SLCensus")
+
 # --- Application-specific settings ---------------------------------------
 SITE_NAME = env("SITE_NAME", default="Census Project Workplan Tracker")
 SITE_URL = env("SITE_URL", default="http://localhost:8000")
