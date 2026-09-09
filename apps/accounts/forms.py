@@ -1,4 +1,4 @@
-from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm
 from django import forms
 
 from .models import User
@@ -24,7 +24,12 @@ class StyledSetPasswordForm(SetPasswordForm):
             field.widget.attrs.update({"class": "form-control"})
 
 
-class UserCreateForm(UserCreationForm):
+class UserCreateForm(forms.ModelForm):
+    """No password fields -- admins invite a user rather than assigning
+    them a password. The new account gets an unusable password and an
+    emailed link to set their own (see accounts.invites), the same
+    self-service mechanism as "forgot password"."""
+
     class Meta:
         model = User
         fields = ["username", "first_name", "last_name", "email", "role", "phone"]

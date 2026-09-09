@@ -14,6 +14,7 @@ urlpatterns = [
     path("users/new/", views.user_create, name="user_create"),
     path("users/<int:pk>/edit/", views.user_edit, name="user_edit"),
     path("users/<int:pk>/reset-password/", views.user_reset_password, name="user_reset_password"),
+    path("users/<int:pk>/send-invite/", views.user_send_invite, name="user_send_invite"),
     path("users/<int:pk>/toggle-active/", views.user_toggle_active, name="user_toggle_active"),
     # Self-service "forgot password" flow (distinct from the admin-driven
     # user_reset_password above, which requires already being logged in

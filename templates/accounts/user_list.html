@@ -34,6 +34,12 @@
           </td>
           <td class="text-end">
             <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            {% if u.email %}
+            <form method="post" action="{% url 'accounts:user_send_invite' u.pk %}" class="d-inline">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-sm btn-outline-primary">{% if u.has_usable_password %}Resend{% else %}Send{% endif %} invite</button>
+            </form>
+            {% endif %}
             <a href="{% url 'accounts:user_reset_password' u.pk %}" class="btn btn-sm btn-outline-secondary">Reset password</a>
             {% if u.pk != request.user.pk %}
             <form method="post" action="{% url 'accounts:user_toggle_active' u.pk %}" class="d-inline">

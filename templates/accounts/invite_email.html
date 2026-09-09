@@ -1,0 +1,18 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ user.get_full_name|default:user.username }},</p>
+<p>An account has been created for you on the {{ site_name }}.</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fb;border-radius:6px;margin:16px 0;">
+  <tr><td style="padding:16px;">
+    <div style="font-size:13px;color:#4a5568;">Your username: <strong>{{ user.username }}</strong></div>
+  </td></tr>
+</table>
+<p>Set your password to log in:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;">
+  <tr><td style="text-align:center;">
+    <a href="{{ protocol }}://{{ domain }}{% url 'accounts:password_reset_confirm' uidb64=uid token=token %}" style="display:inline-block;padding:10px 20px;background:#1c7ed6;color:#ffffff;text-decoration:none;border-radius:4px;font-size:14px;">Set your password</a>
+  </td></tr>
+</table>
+<p style="font-size:12px;color:#6b7785;">Or copy this link: {{ protocol }}://{{ domain }}{% url 'accounts:password_reset_confirm' uidb64=uid token=token %}</p>
+<p style="font-size:12px;color:#6b7785;">This link can only be used once and expires after a few days. If it expires, ask an administrator to resend your invite.</p>
+{% endblock %}

@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from . import permissions
 from .forms import LoginForm, UserCreateForm, UserUpdateForm
+from .invites import send_login_invite
 from .models import User
 
 
@@ -36,8 +37,17 @@ def user_create(request):
     if request.method == "POST":
         form = UserCreateForm(request.POST)
         if form.is_valid():
-            user = form.save()
-            messages.success(request, f"User {user.username} created.")
+            user = form.save(commit=False)
+            user.set_unusable_password()
+            user.save()
+            if send_login_invite(request, user):
+                messages.success(request, f"User {user.username} created and invited to set their password at {user.email}.")
+            else:
+                messages.warning(
+                    request,
+                    f"User {user.username} created, but has no email on file to send a login invite to -- "
+                    "add one and use \"Send invite\" from the user list, or set a password manually.",
+                )
             return redirect("accounts:user_list")
     else:
         form = UserCreateForm()
@@ -72,6 +82,18 @@ def user_reset_password(request, pk):
     else:
         form = AdminPasswordChangeForm(target)
     return render(request, "accounts/user_password_form.html", {"form": form, "target": target})
+
+
+@login_required
+@user_passes_test(_require_admin)
+def user_send_invite(request, pk):
+    target = get_object_or_404(User, pk=pk)
+    if request.method == "POST":
+        if send_login_invite(request, target):
+            messages.success(request, f"Login invite sent to {target.email}.")
+        else:
+            messages.error(request, f"{target.username} has no email on file -- add one first.")
+    return redirect("accounts:user_list")
 
 
 @login_required
