@@ -17,5 +17,12 @@ def active_project(request):
         request.session["active_project_id"] = active.id
 
     nav_workstreams = list(active.workstreams.order_by("name")) if active else []
+    summary_workstream = next((w for w in nav_workstreams if w.name.strip().lower() == "summary"), None)
+    other_workstreams = [w for w in nav_workstreams if w is not summary_workstream]
 
-    return {"nav_projects": projects, "active_project": active, "nav_workstreams": nav_workstreams}
+    return {
+        "nav_projects": projects,
+        "active_project": active,
+        "nav_workstreams": other_workstreams,
+        "summary_workstream": summary_workstream,
+    }
