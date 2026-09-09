@@ -41,6 +41,15 @@
   <div class="col-6 col-md-3"><div class="kpi-card kpi-accent-purple p-3"><div class="kpi-icon"><i class="bi bi-person-x"></i></div><div><div class="kpi-value text-secondary">{{ stats.unassigned }}</div><div class="kpi-label">No Owner</div></div></div></div>
 </div>
 
+{% if stats.total %}
+<div class="section-card mb-3">
+  <h6 class="mb-3">Status Breakdown</h6>
+  <div class="d-flex align-items-center justify-content-center" style="position:relative; height:200px;">
+    <canvas id="workstreamStatusChart"></canvas>
+  </div>
+</div>
+{% endif %}
+
 <div class="section-card">
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
@@ -72,3 +81,24 @@
   </div>
 </div>
 {% endblock %}
+
+{% if stats.total %}
+{% block extra_scripts %}
+{{ status_labels|json_script:"status-labels-data" }}
+{{ status_values|json_script:"status-values-data" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('workstreamStatusChart'), {
+  type: 'doughnut',
+  data: {
+    labels: JSON.parse(document.getElementById('status-labels-data').textContent),
+    datasets: [{
+      data: JSON.parse(document.getElementById('status-values-data').textContent),
+      backgroundColor: ['#adb5bd', '#1c7ed6', '#5f3dc4', '#2f9e44', '#e03131', '#f08c00'],
+    }],
+  },
+  options: { maintainAspectRatio: false, plugins: { legend: { position: 'right' } } },
+});
+</script>
+{% endblock %}
+{% endif %}

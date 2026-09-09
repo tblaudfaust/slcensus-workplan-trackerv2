@@ -96,6 +96,10 @@ def workstream_detail(request, pk):
     overdue = sum(1 for a in activities if a.is_overdue)
     unassigned = sum(1 for a in activities if not a.has_owner)
 
+    status_counts = {s.value: 0 for s in Status}
+    for a in activities:
+        status_counts[a.status] += 1
+
     return render(
         request,
         "projects/workstream_detail.html",
@@ -109,6 +113,8 @@ def workstream_detail(request, pk):
                 "unassigned": unassigned,
                 "percent": round((completed / total) * 100) if total else 0,
             },
+            "status_labels": [Status(s).label for s in status_counts.keys()],
+            "status_values": list(status_counts.values()),
             "can_alert": permissions.can_validate_completion(request.user, _WorkstreamActivityStandin(workstream)),
         },
     )
