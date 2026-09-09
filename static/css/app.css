@@ -579,6 +579,14 @@ main select:not(.form-select) {
   background: var(--ct-purple-pale);
 }
 
+.section-card-tint-slate {
+  background: #f1f3f5;
+}
+
+.table-text-bold tbody td {
+  font-weight: 600;
+}
+
 .gantt-wrapper {
   overflow-x: auto;
   overflow-y: auto;
