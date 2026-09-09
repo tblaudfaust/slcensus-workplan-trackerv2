@@ -130,6 +130,54 @@ class SendNotificationTests(TestCase):
         self.assertFalse(already_sent_today(RuleType.TASK_ASSIGNED, self.activity))
 
 
+class ActivitySignalUploadSourceTests(TestCase):
+    """A bulk upload can create/update hundreds of activities in one
+    request; sending a real-time email per row (as happens for
+    source="MANUAL") is both unwanted (nobody wants 100+ "assigned"
+    emails for a spreadsheet import) and, since each send is a blocking
+    SMTP round-trip, can push the request past the server's timeout."""
+
+    def setUp(self):
+        _seed_default_rules(sender=None)
+        owner = User.objects.create_user("owner", password="x", role=Role.PROJECT_OWNER, email="owner@example.org")
+        self.project = Project.objects.create(name="Census", owner=owner)
+        self.ws = Workstream.objects.create(project=self.project, name="GIS")
+        self.responsible = User.objects.create_user("r", password="x", email="r@example.org")
+
+    def test_activity_created_from_upload_sends_no_email(self):
+        from apps.activities.signals import activity_created
+
+        activity = Activity.objects.create(
+            project=self.project, workstream=self.ws, name="Task", responsible=self.responsible
+        )
+        activity_created.send(sender=Activity, activity=activity, changed_by=None, source="UPLOAD")
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_activity_created_from_manual_still_sends_email(self):
+        from apps.activities.signals import activity_created
+
+        activity = Activity.objects.create(
+            project=self.project, workstream=self.ws, name="Task", responsible=self.responsible
+        )
+        activity_created.send(sender=Activity, activity=activity, changed_by=None, source="MANUAL")
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_activity_changed_from_upload_sends_no_email(self):
+        from apps.activities.signals import activity_changed
+
+        activity = Activity.objects.create(
+            project=self.project, workstream=self.ws, name="Task", status=Status.NOT_STARTED
+        )
+        activity_changed.send(
+            sender=Activity,
+            activity=activity,
+            changed_fields={"status": ("Not Started", "Ongoing")},
+            changed_by=None,
+            source="UPLOAD",
+        )
+        self.assertEqual(len(mail.outbox), 0)
+
+
 class CheckDeadlinesCommandTests(TestCase):
     def setUp(self):
         _seed_default_rules(sender=None)

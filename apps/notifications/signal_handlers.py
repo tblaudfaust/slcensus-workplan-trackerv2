@@ -9,6 +9,8 @@ from .models import RuleType
 
 @receiver(activity_created)
 def on_activity_created(sender, activity, changed_by=None, source="MANUAL", **kwargs):
+    if source == "UPLOAD":
+        return
     if not activity.responsible_id or not rule_enabled(RuleType.TASK_ASSIGNED):
         return
     recipients = eligible_recipients(activity.responsible)
@@ -24,6 +26,8 @@ def on_activity_created(sender, activity, changed_by=None, source="MANUAL", **kw
 
 @receiver(activity_changed)
 def on_activity_changed(sender, activity, changed_fields, changed_by=None, source="MANUAL", **kwargs):
+    if source == "UPLOAD":
+        return
     if "responsible_id" in changed_fields and activity.responsible_id and rule_enabled(RuleType.TASK_ASSIGNED):
         send_notification(
             rule_type=RuleType.TASK_ASSIGNED,
