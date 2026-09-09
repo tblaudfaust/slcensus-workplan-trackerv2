@@ -7,6 +7,8 @@
   --ct-accent: #1c7ed6;
   --ct-accent-light: #4c9aeb;
   --ct-blue-pale: #eaf2fd;
+  --ct-red-pale: #fdecec;
+  --ct-purple-pale: #f1edfa;
   --ct-green: #2f9e44;
   --ct-amber: #f08c00;
   --ct-red: #e03131;
@@ -563,6 +565,18 @@ main select:not(.form-select) {
 
 .gantt-section {
   background: #f1f3f5;
+}
+
+.section-card-tint-red {
+  background: var(--ct-red-pale);
+}
+
+.section-card-tint-blue {
+  background: var(--ct-blue-pale);
+}
+
+.section-card-tint-purple {
+  background: var(--ct-purple-pale);
 }
 
 .gantt-wrapper {
