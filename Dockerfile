@@ -24,4 +24,4 @@ EXPOSE 8000
 # migrate step. $PORT is read from the environment (PaaS platforms assign
 # it dynamically); defaults to 8000 for docker-compose / local `docker run`.
 CMD python manage.py migrate --noinput && \
-    gunicorn census_tracker.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3
+    gunicorn census_tracker.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3 --timeout 120
