@@ -561,10 +561,23 @@ main select:not(.form-select) {
    Misc
 ------------------------------------------------------------------------ */
 
+.gantt-section {
+  background: #eaf2fd;
+}
+
 .gantt-wrapper {
   overflow-x: auto;
   overflow-y: auto;
   max-height: 520px;
+  background: #fff;
+  border-radius: 0.6rem;
+}
+
+/* frappe-gantt wraps its svg in a .gantt-container div with its own
+   overflow:auto -- neutralized so .gantt-wrapper stays the single
+   scrolling ancestor the sticky date header pins itself against. */
+.gantt-wrapper .gantt-container {
+  overflow: visible;
 }
 
 .history-entry {

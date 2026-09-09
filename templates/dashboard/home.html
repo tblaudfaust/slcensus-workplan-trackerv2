@@ -11,6 +11,11 @@
   .gantt .bar-wrapper.gantt-delayed .bar { fill: #e03131; }
   .gantt .bar-wrapper.gantt-at_risk .bar { fill: #f08c00; }
   .gantt .bar-wrapper.gantt-overdue .bar { fill: #c92a2a; }
+  .gantt .bar-label { font-weight: 700; font-size: 12.5px; }
+  .gantt .bar-label.big { font-weight: 700; fill: #1c2a3a; }
+  .gantt .upper-text, .gantt .lower-text { font-weight: 700; fill: #1c2a3a; }
+  .gantt-sticky-header { position: sticky; top: 0; z-index: 2; background: #eaf2fd; }
+  .gantt-sticky-header svg { display: block; }
 </style>
 {% endblock %}
 {% block content %}
@@ -176,7 +181,7 @@
   </div>
 </div>
 
-<div class="section-card mb-3">
+<div class="section-card gantt-section mb-3">
   <h6 class="mb-3"><i class="bi bi-bar-chart-steps"></i> Project Timeline</h6>
   <div class="gantt-wrapper">
     <svg id="ganttChart"></svg>
@@ -260,6 +265,43 @@ fetch(ganttDataUrl).then(r => r.json()).then(tasks => {
     view_mode: 'Week',
     on_click: (task) => { window.location.href = task.url; },
   });
+  freezeGanttHeader();
 });
+
+function freezeGanttHeader() {
+  // frappe-gantt (0.6.1) draws the whole chart -- date header plus every
+  // row -- as one flat SVG with plain pixel width/height (no viewBox), so
+  // there's no built-in way to keep just the header visible while
+  // scrolling the rows underneath it. This clones the header band into
+  // its own small SVG (cropped to just that band via a viewBox we add),
+  // pins that clone with position:sticky, and crops the same band out of
+  // the original SVG so the header isn't drawn twice.
+  const svg = document.getElementById('ganttChart');
+  const wrapper = svg && svg.closest('.gantt-wrapper');
+  const gridHeader = svg && svg.querySelector('.grid-header');
+  if (!svg || !wrapper || !gridHeader) return;
+
+  const width = parseFloat(svg.getAttribute('width'));
+  const height = parseFloat(svg.getAttribute('height'));
+  const headerHeight = gridHeader.getBBox().height;
+  if (!width || !height || !headerHeight) return;
+
+  const headerSvg = svg.cloneNode(true);
+  headerSvg.removeAttribute('id');
+  headerSvg.setAttribute('viewBox', `0 0 ${width} ${headerHeight}`);
+  headerSvg.setAttribute('width', width);
+  headerSvg.setAttribute('height', headerHeight);
+
+  const holder = document.createElement('div');
+  holder.className = 'gantt-sticky-header';
+  holder.appendChild(headerSvg);
+  // frappe-gantt nests the svg inside its own .gantt-container div (which
+  // also sets overflow:auto), so the svg isn't a direct child of
+  // .gantt-wrapper -- insert next to it there instead.
+  svg.parentElement.insertBefore(holder, svg);
+
+  svg.setAttribute('viewBox', `0 ${headerHeight} ${width} ${height - headerHeight}`);
+  svg.setAttribute('height', height - headerHeight);
+}
 </script>
 {% endblock %}
