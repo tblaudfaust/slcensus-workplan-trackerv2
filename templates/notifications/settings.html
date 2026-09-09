@@ -36,6 +36,34 @@
 </form>
 
 <div class="section-card mt-4">
+  <h6 class="mb-3"><i class="bi bi-megaphone"></i> Send Broadcast Message</h6>
+  <p class="text-muted small">Sends an update directly to every active user, outside the automated activity alerts above.</p>
+  <form method="post" action="{% url 'notifications:broadcast' %}">
+    {% csrf_token %}
+    <div class="mb-3">
+      <label class="form-label small mb-1">Subject</label>
+      <input type="text" name="subject" class="form-control" maxlength="200" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label small mb-1">Message</label>
+      <textarea name="message" class="form-control" rows="4" required></textarea>
+    </div>
+    <div class="mb-3 d-flex gap-4">
+      <div class="form-check">
+        <input type="checkbox" class="form-check-input" name="via_email" id="broadcastEmail" checked>
+        <label class="form-check-label" for="broadcastEmail">Send by Email</label>
+      </div>
+      <div class="form-check">
+        <input type="checkbox" class="form-check-input" name="via_sms" id="broadcastSms">
+        <label class="form-check-label" for="broadcastSms">Send by SMS</label>
+        <div class="form-text">Only reaches users who opted in to SMS and have a phone number on file.</div>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" onclick="return confirm('Send this broadcast to every active user now?');">Send broadcast</button>
+  </form>
+</div>
+
+<div class="section-card mt-4">
   <h6 class="mb-3">Recent Notification Activity</h6>
   <div class="table-responsive">
     <table class="table table-sm mb-0">

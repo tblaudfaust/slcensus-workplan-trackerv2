@@ -14,6 +14,7 @@ class RuleType(models.TextChoices):
     VALIDATION_REQUESTED = "VALIDATION_REQUESTED", "Activity ready for validation"
     COMPLETION_VALIDATED = "COMPLETION_VALIDATED", "Completion validated by workstream owner"
     MANUAL_ALERT = "MANUAL_ALERT", "Manually triggered workstream alert"
+    BROADCAST = "BROADCAST", "Manual broadcast to all users"
 
 
 class NotificationRule(models.Model):

@@ -1,0 +1,11 @@
+{% extends "emails/_base_email.html" %}
+{% block body %}
+<p>Hello {{ recipient_name }},</p>
+<p>{{ triggered_by }} sent the following update to all users:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8f9fb;border-radius:6px;margin:16px 0;">
+  <tr><td style="padding:16px;">
+    <div style="font-size:15px;font-weight:bold;margin-bottom:8px;">{{ subject }}</div>
+    <div style="font-size:13px;color:#1b2733;">{{ message|linebreaksbr }}</div>
+  </td></tr>
+</table>
+{% endblock %}

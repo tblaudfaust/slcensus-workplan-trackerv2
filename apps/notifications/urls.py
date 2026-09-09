@@ -6,4 +6,5 @@ app_name = "notifications"
 
 urlpatterns = [
     path("settings/", views.settings_view, name="settings"),
+    path("broadcast/", views.broadcast_view, name="broadcast"),
 ]

@@ -402,6 +402,80 @@ class AtRiskAlertSmsTests(TestCase):
         mock_post.assert_not_called()
 
 
+class BroadcastViewTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user("admin", password="pass12345", role=Role.ADMIN)
+        self.emailed = User.objects.create_user("a", password="x", email="a@example.org")
+        self.opted_out = User.objects.create_user(
+            "b", password="x", email="b@example.org", receive_email_notifications=False
+        )
+        self.sms_opted_in = User.objects.create_user(
+            "c", password="x", email="c@example.org", phone="23230123456", receive_sms_notifications=True
+        )
+        self.inactive = User.objects.create_user("d", password="x", email="d@example.org", is_active=False)
+
+    def test_non_admin_cannot_send_a_broadcast(self):
+        from django.urls import reverse
+
+        self.client.login(username="a", password="x")
+        response = self.client.post(
+            reverse("notifications:broadcast"), {"subject": "Hi", "message": "Body", "via_email": "on"}
+        )
+        self.assertNotEqual(response.status_code, 200)
+        self.assertEqual(NotificationLog.objects.count(), 0)
+
+    def test_email_broadcast_reaches_opted_in_active_users_only(self):
+        from django.urls import reverse
+
+        self.client.login(username="admin", password="pass12345")
+        self.client.post(
+            reverse("notifications:broadcast"),
+            {"subject": "Heads up", "message": "New deadline next week", "via_email": "on"},
+        )
+        sent_to = set(
+            NotificationLog.objects.filter(rule_type=RuleType.BROADCAST, channel="EMAIL").values_list(
+                "recipient", flat=True
+            )
+        )
+        self.assertEqual(sent_to, {"a@example.org", "c@example.org"})
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn("Heads up", mail.outbox[0].subject)
+
+    @override_settings(SMS_ENABLED=True, SMS_CLIENT_ID="1", SMS_CLIENT_SECRET="2", SMS_TOKEN="3")
+    @patch("apps.notifications.sms.requests.post")
+    def test_sms_broadcast_reaches_only_sms_opted_in_users(self, mock_post):
+        from django.urls import reverse
+
+        mock_post.return_value = Mock(json=lambda: {"Status": "pending"})
+        self.client.login(username="admin", password="pass12345")
+        self.client.post(
+            reverse("notifications:broadcast"),
+            {"subject": "Heads up", "message": "New deadline next week", "via_sms": "on"},
+        )
+        self.assertTrue(
+            NotificationLog.objects.filter(
+                rule_type=RuleType.BROADCAST, channel="SMS", recipient="23230123456"
+            ).exists()
+        )
+        self.assertEqual(NotificationLog.objects.filter(rule_type=RuleType.BROADCAST, channel="SMS").count(), 1)
+        mock_post.assert_called_once()
+
+    def test_requires_at_least_one_channel(self):
+        from django.urls import reverse
+
+        self.client.login(username="admin", password="pass12345")
+        self.client.post(reverse("notifications:broadcast"), {"subject": "Hi", "message": "Body"})
+        self.assertEqual(NotificationLog.objects.count(), 0)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_requires_subject_and_message(self):
+        from django.urls import reverse
+
+        self.client.login(username="admin", password="pass12345")
+        self.client.post(reverse("notifications:broadcast"), {"subject": "", "message": "", "via_email": "on"})
+        self.assertEqual(NotificationLog.objects.count(), 0)
+
+
 class ValidationNotificationTests(TestCase):
     def setUp(self):
         _seed_default_rules(sender=None)

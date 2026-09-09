@@ -3,8 +3,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import redirect, render
 
 from apps.accounts import permissions
+from apps.accounts.models import User
 
-from .models import NotificationLog, NotificationRule
+from .emailing import eligible_recipients, send_notification
+from .models import NotificationLog, NotificationRule, RuleType
+from .sms import eligible_sms_recipients, send_sms_alert
 
 
 @login_required
@@ -27,3 +30,46 @@ def settings_view(request):
     rules = NotificationRule.objects.all()
     recent_log = NotificationLog.objects.select_related("activity")[:30]
     return render(request, "notifications/settings.html", {"rules": rules, "recent_log": recent_log})
+
+
+@login_required
+@user_passes_test(permissions.can_manage_notification_settings)
+def broadcast_view(request):
+    subject = request.POST.get("subject", "").strip()
+    message = request.POST.get("message", "").strip()
+    via_email = "via_email" in request.POST
+    via_sms = "via_sms" in request.POST
+
+    if not subject or not message:
+        messages.error(request, "Broadcast needs both a subject and a message.")
+        return redirect("notifications:settings")
+    if not via_email and not via_sms:
+        messages.error(request, "Pick at least one delivery channel.")
+        return redirect("notifications:settings")
+
+    all_users = list(User.objects.filter(is_active=True))
+    email_sent = sms_sent = 0
+
+    if via_email:
+        email_sent = send_notification(
+            rule_type=RuleType.BROADCAST,
+            template="broadcast",
+            subject=f"[Census Tracker] {subject}",
+            context={
+                "recipient_name": "team",
+                "subject": subject,
+                "message": message,
+                "triggered_by": request.user.get_full_name() or request.user.username,
+            },
+            recipients=eligible_recipients(*all_users),
+        )
+
+    if via_sms:
+        sms_sent = send_sms_alert(
+            rule_type=RuleType.BROADCAST,
+            message=f"[Census Tracker] {subject}: {message}",
+            recipients=eligible_sms_recipients(*all_users),
+        )
+
+    messages.success(request, f"Broadcast sent: {email_sent} email(s), {sms_sent} SMS.")
+    return redirect("notifications:settings")
