@@ -163,7 +163,7 @@ SMS_CLIENT_SECRET = env("SMS_CLIENT_SECRET", default="")
 SMS_TOKEN = env("SMS_TOKEN", default="")
 # The SMS "From" sender name shown to recipients -- AppHive caps this at 11
 # characters.
-SMS_SENDER_ID = env("SMS_SENDER_ID", default="SLCensus")
+SMS_SENDER_ID = env("SMS_SENDER_ID", default="STATS SL")
 
 # --- Application-specific settings ---------------------------------------
 SITE_NAME = env("SITE_NAME", default="Census Project Workplan Tracker")
