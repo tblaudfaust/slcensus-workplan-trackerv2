@@ -233,6 +233,23 @@ a:hover {
   color: #fff;
 }
 
+.sidebar-sublink {
+  padding-left: 2.35rem;
+  font-size: 0.83rem;
+  font-weight: 400;
+  color: var(--ct-gray);
+}
+
+.sidebar-sublink:hover {
+  color: var(--ct-navy);
+}
+
+.sidebar-sublink.active {
+  background: var(--ct-blue-pale);
+  color: var(--ct-navy);
+  font-weight: 600;
+}
+
 .sidebar-footer {
   margin-top: 1.5rem;
   border-radius: 0.75rem;

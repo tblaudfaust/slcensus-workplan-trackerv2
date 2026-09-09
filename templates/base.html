@@ -92,7 +92,10 @@
       <a class="sidebar-link {% if request.resolver_match.app_name == 'activities' and request.resolver_match.url_name != 'audit_log' %}active{% endif %}" href="{% url 'activities:list' %}"><i class="bi bi-list-check"></i> Activities</a>
       <a class="sidebar-link {% if request.resolver_match.app_name == 'projects' and request.resolver_match.url_name != 'workstream_detail' and request.resolver_match.url_name != 'workstream_edit' %}active{% endif %}" href="{% url 'projects:list' %}"><i class="bi bi-diagram-3"></i> Projects</a>
       {% if active_project %}
-      <a class="sidebar-link {% if request.resolver_match.url_name == 'workstream_detail' or request.resolver_match.url_name == 'workstream_edit' %}active{% endif %}" href="{% url 'projects:detail' active_project.pk %}"><i class="bi bi-diagram-2"></i> Workstreams</a>
+      <a class="sidebar-link {% if request.resolver_match.url_name == 'workstream_edit' %}active{% endif %}" href="{% url 'projects:detail' active_project.pk %}"><i class="bi bi-diagram-2"></i> Workstreams</a>
+      {% for ws in nav_workstreams %}
+      <a class="sidebar-link sidebar-sublink {% if request.resolver_match.url_name == 'workstream_detail' and request.resolver_match.kwargs.pk == ws.pk %}active{% endif %}" href="{% url 'projects:workstream_detail' ws.pk %}">{{ ws.name }}</a>
+      {% endfor %}
       {% endif %}
 
       {% if perms_can_upload or perms_is_admin %}
