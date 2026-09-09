@@ -1,4 +1,6 @@
+from django.core import mail
 from django.test import TestCase
+from django.urls import reverse
 
 from apps.activities.models import Activity
 from apps.projects.models import Project, Workstream
@@ -78,3 +80,58 @@ class CoOwnerPermissionTests(TestCase):
     def test_unrelated_project_owner_still_excluded(self):
         self.assertFalse(permissions.can_manage_project(self.other_owner, self.project))
         self.assertFalse(permissions.can_edit_activity(self.other_owner, self.activity))
+
+
+class PasswordResetFlowTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("alex", password="old-password-123", email="alex@example.org")
+
+    def _extract_reset_path(self, email_body):
+        import re
+
+        match = re.search(r"(/accounts/reset/\S+/\S+/)", email_body)
+        self.assertIsNotNone(match, f"No reset link found in email body:\n{email_body}")
+        return match.group(1)
+
+    def test_request_for_known_email_sends_a_working_reset_link(self):
+        response = self.client.post(reverse("accounts:password_reset"), {"email": "alex@example.org"})
+        self.assertRedirects(response, reverse("accounts:password_reset_done"))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("alex@example.org", mail.outbox[0].to)
+        self.assertIn("Password reset", mail.outbox[0].subject)
+
+        reset_path = self._extract_reset_path(mail.outbox[0].body)
+        # Following the emailed link redirects (uidb64/token get consumed
+        # into the session) to the same view with a stable "set-password"
+        # placeholder in the URL -- the real Django auth flow.
+        follow_response = self.client.get(reset_path, follow=True)
+        self.assertEqual(follow_response.status_code, 200)
+        self.assertTrue(follow_response.context["validlink"])
+
+        set_password_url = follow_response.request["PATH_INFO"]
+        confirm_response = self.client.post(
+            set_password_url, {"new_password1": "brand-new-password-456", "new_password2": "brand-new-password-456"}
+        )
+        self.assertRedirects(confirm_response, reverse("accounts:password_reset_complete"))
+
+        self.assertFalse(self.client.login(username="alex", password="old-password-123"))
+        self.assertTrue(self.client.login(username="alex", password="brand-new-password-456"))
+
+    def test_request_for_unknown_email_sends_nothing_but_still_succeeds(self):
+        # Must not reveal whether an email is registered -- same redirect,
+        # no email sent.
+        response = self.client.post(reverse("accounts:password_reset"), {"email": "nobody@example.org"})
+        self.assertRedirects(response, reverse("accounts:password_reset_done"))
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_mismatched_new_passwords_are_rejected(self):
+        self.client.post(reverse("accounts:password_reset"), {"email": "alex@example.org"})
+        reset_path = self._extract_reset_path(mail.outbox[0].body)
+        follow_response = self.client.get(reset_path, follow=True)
+        set_password_url = follow_response.request["PATH_INFO"]
+
+        confirm_response = self.client.post(
+            set_password_url, {"new_password1": "brand-new-password-456", "new_password2": "does-not-match"}
+        )
+        self.assertEqual(confirm_response.status_code, 200)
+        self.assertTrue(self.client.login(username="alex", password="old-password-123"))
