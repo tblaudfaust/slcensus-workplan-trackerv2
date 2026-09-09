@@ -18,14 +18,15 @@ class UploadForm(forms.Form):
             field.widget.attrs.setdefault("class", "form-control")
         self.fields["project"].widget.attrs["class"] = "form-select"
         self.fields["workstream"].widget.attrs["class"] = "form-select"
-        if "project" in self.data:
-            try:
-                project_id = int(self.data.get("project"))
-                self.fields["workstream"].queryset = Workstream.objects.filter(project_id=project_id)
-            except (TypeError, ValueError):
-                pass
-        elif self.initial.get("project"):
-            self.fields["workstream"].queryset = Workstream.objects.filter(project=self.initial["project"])
+        # Populate every workstream up front (labelled with its project via
+        # Workstream.__str__) so the dropdown has real choices on the very
+        # first page load -- it used to stay empty until the form was
+        # POSTed once, since the queryset was only narrowed from data that
+        # doesn't exist yet on a fresh GET, making it impossible to select
+        # a workstream on a first attempt.
+        self.fields["workstream"].queryset = Workstream.objects.filter(project__is_active=True).select_related(
+            "project"
+        )
 
     def clean_file(self):
         f = self.cleaned_data["file"]
