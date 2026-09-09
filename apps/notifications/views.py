@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import redirect, render
 
 from apps.accounts import permissions
@@ -10,8 +9,7 @@ from .models import NotificationLog, NotificationRule, RuleType
 from .sms import eligible_sms_recipients, send_sms_alert
 
 
-@login_required
-@user_passes_test(permissions.can_manage_notification_settings)
+@permissions.require_permission(permissions.can_manage_notification_settings)
 def settings_view(request):
     if request.method == "POST":
         for rule in NotificationRule.objects.all():
@@ -32,8 +30,7 @@ def settings_view(request):
     return render(request, "notifications/settings.html", {"rules": rules, "recent_log": recent_log})
 
 
-@login_required
-@user_passes_test(permissions.can_manage_notification_settings)
+@permissions.require_permission(permissions.can_manage_notification_settings)
 def broadcast_view(request):
     subject = request.POST.get("subject", "").strip()
     message = request.POST.get("message", "").strip()

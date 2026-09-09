@@ -225,3 +225,45 @@ class UserInviteFlowTests(TestCase):
         response = self.client.post(reverse("accounts:user_send_invite", args=[target.pk]))
         self.assertNotEqual(response.status_code, 200)
         self.assertEqual(len(mail.outbox), 0)
+
+
+class PermissionDeniedBehaviorTests(TestCase):
+    """require_permission's whole reason to exist: a logged-in user who
+    fails a permission check must get a clean 403, not get bounced back
+    to the login page -- which, combined with LoginView's
+    redirect_authenticated_user=True, used to loop forever (login ->
+    already authenticated -> redirected to the denied page -> denied ->
+    back to login -> ...) instead of ever saying no. Every admin-gated
+    entry point across the apps is checked here since each one is wired
+    up independently."""
+
+    def setUp(self):
+        User.objects.create_user("plainviewer", password="x", role=Role.VIEWER)
+        self.client.login(username="plainviewer", password="x")
+
+    def test_anonymous_user_is_redirected_to_login_not_denied(self):
+        self.client.logout()
+        response = self.client.get(reverse("accounts:user_list"))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse("accounts:login"), response.url)
+
+    def test_admin_gated_accounts_pages_deny_cleanly_no_loop(self):
+        for name in ["accounts:user_list", "accounts:user_create"]:
+            response = self.client.get(reverse(name), follow=True)
+            self.assertEqual(response.status_code, 403, name)
+            self.assertEqual(response.redirect_chain, [], name)
+
+    def test_admin_gated_project_create_denies_cleanly_no_loop(self):
+        response = self.client.get(reverse("projects:create"), follow=True)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.redirect_chain, [])
+
+    def test_admin_gated_notification_settings_denies_cleanly_no_loop(self):
+        response = self.client.get(reverse("notifications:settings"), follow=True)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.redirect_chain, [])
+
+    def test_upload_gated_for_viewer_role_denies_cleanly_no_loop(self):
+        response = self.client.get(reverse("uploads:start"), follow=True)
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.redirect_chain, [])

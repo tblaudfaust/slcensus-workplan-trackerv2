@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -32,8 +32,7 @@ def project_detail(request, pk):
     )
 
 
-@login_required
-@user_passes_test(permissions.is_admin)
+@permissions.require_permission(permissions.is_admin)
 def project_create(request):
     if request.method == "POST":
         form = ProjectForm(request.POST)

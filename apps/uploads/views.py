@@ -3,7 +3,6 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts import permissions
@@ -22,8 +21,7 @@ def _require_upload_permission(user):
     return permissions.can_upload_workplans(user)
 
 
-@login_required
-@user_passes_test(_require_upload_permission)
+@permissions.require_permission(_require_upload_permission)
 def upload_start(request):
     if request.method == "POST":
         form = UploadForm(request.POST, request.FILES)
@@ -73,8 +71,7 @@ def _load_pending(request):
     return pending
 
 
-@login_required
-@user_passes_test(_require_upload_permission)
+@permissions.require_permission(_require_upload_permission)
 def upload_preview(request):
     pending = _load_pending(request)
     if not pending:
@@ -167,15 +164,13 @@ def upload_preview(request):
     )
 
 
-@login_required
-@user_passes_test(_require_upload_permission)
+@permissions.require_permission(_require_upload_permission)
 def upload_history(request):
     batches = UploadBatch.objects.select_related("project", "workstream", "uploaded_by")
     return render(request, "uploads/upload_history.html", {"batches": batches})
 
 
-@login_required
-@user_passes_test(_require_upload_permission)
+@permissions.require_permission(_require_upload_permission)
 def upload_batch_detail(request, pk):
     batch = get_object_or_404(UploadBatch.objects.select_related("project", "workstream", "uploaded_by"), pk=pk)
     return render(request, "uploads/upload_batch_detail.html", {"batch": batch})

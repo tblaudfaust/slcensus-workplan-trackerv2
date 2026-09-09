@@ -15,6 +15,7 @@
           <th>Email</th>
           <th>Role</th>
           <th>Status</th>
+          <th>Last Login</th>
           <th class="text-end">Actions</th>
         </tr>
       </thead>
@@ -32,6 +33,7 @@
               <span class="badge text-bg-secondary">Inactive</span>
             {% endif %}
           </td>
+          <td class="text-muted small">{% if u.last_login %}{{ u.last_login|date:"d M Y H:i" }}{% else %}Never{% endif %}</td>
           <td class="text-end">
             <a href="{% url 'accounts:user_edit' u.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
             {% if u.email %}
@@ -52,7 +54,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="6" class="text-center text-muted py-4">No users yet.</td></tr>
+        <tr><td colspan="7" class="text-center text-muted py-4">No users yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

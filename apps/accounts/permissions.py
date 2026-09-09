@@ -4,7 +4,36 @@ Kept as plain functions (not a permissions backend) so every view makes an
 explicit, readable check rather than relying on hidden template-only gating.
 """
 
+from functools import wraps
+
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+
 from .models import Role
+
+
+def require_permission(test_func):
+    """Like Django's user_passes_test, but distinguishes "not logged in"
+    from "logged in, not allowed": an anonymous user is redirected to
+    login as usual, but an authenticated user who fails the check gets a
+    clean 403 page via PermissionDenied. user_passes_test alone redirects
+    both cases to LOGIN_URL -- combined with LoginView's
+    redirect_authenticated_user=True, an already-authenticated user
+    denied by a permission check would otherwise be bounced straight back
+    to the page that just denied them, looping forever instead of ever
+    being told no."""
+
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def wrapper(request, *args, **kwargs):
+            if not test_func(request.user):
+                raise PermissionDenied
+            return view_func(request, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 def is_admin(user):

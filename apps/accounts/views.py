@@ -1,6 +1,5 @@
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import AdminPasswordChangeForm
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -24,15 +23,13 @@ def _require_admin(user):
     return permissions.can_manage_users(user)
 
 
-@login_required
-@user_passes_test(_require_admin)
+@permissions.require_permission(_require_admin)
 def user_list(request):
     users = User.objects.all()
     return render(request, "accounts/user_list.html", {"users": users})
 
 
-@login_required
-@user_passes_test(_require_admin)
+@permissions.require_permission(_require_admin)
 def user_create(request):
     if request.method == "POST":
         form = UserCreateForm(request.POST)
@@ -54,8 +51,7 @@ def user_create(request):
     return render(request, "accounts/user_form.html", {"form": form, "is_create": True})
 
 
-@login_required
-@user_passes_test(_require_admin)
+@permissions.require_permission(_require_admin)
 def user_edit(request, pk):
     target = get_object_or_404(User, pk=pk)
     if request.method == "POST":
@@ -69,8 +65,7 @@ def user_edit(request, pk):
     return render(request, "accounts/user_form.html", {"form": form, "is_create": False, "target": target})
 
 
-@login_required
-@user_passes_test(_require_admin)
+@permissions.require_permission(_require_admin)
 def user_reset_password(request, pk):
     target = get_object_or_404(User, pk=pk)
     if request.method == "POST":
@@ -84,8 +79,7 @@ def user_reset_password(request, pk):
     return render(request, "accounts/user_password_form.html", {"form": form, "target": target})
 
 
-@login_required
-@user_passes_test(_require_admin)
+@permissions.require_permission(_require_admin)
 def user_send_invite(request, pk):
     target = get_object_or_404(User, pk=pk)
     if request.method == "POST":
@@ -96,8 +90,7 @@ def user_send_invite(request, pk):
     return redirect("accounts:user_list")
 
 
-@login_required
-@user_passes_test(_require_admin)
+@permissions.require_permission(_require_admin)
 def user_toggle_active(request, pk):
     target = get_object_or_404(User, pk=pk)
     if request.method == "POST" and target.pk != request.user.pk:
